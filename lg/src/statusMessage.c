@@ -50,7 +50,7 @@ int main() {
 	
     // Example opcode for status message
     char opcode = 0xC0; // Replace with actual opcode
-    char response[10] = {0}; // Buffer to hold the response
+    char response[1] = {0}; // Buffer to hold the response
 
     int result = getStatus(spi_handle, opcode, response, sizeof(response));
     if (result < 0) {
