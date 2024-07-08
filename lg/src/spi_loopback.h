@@ -7,6 +7,8 @@
 #define LOW 0
 #define HIGH 1
 
+#define READY 0
+#define BUSY 1
 //function protypes
 int lgpio_init(void);
 int spiHandle(int spiDev, int spiChannel, int spiBaud, int spiFlag);

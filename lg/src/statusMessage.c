@@ -41,12 +41,12 @@ void gpio_init(int chip_handle);
 int spiHandle(int spiDev, int spiChannel, int spiBaud, int spiFlag);
 void printBuffer(const char *buffer, int len);
 int getStatus(int spi_handle, char opcode, char *response, int response_len);
-/*int chip_handle = 0;*/
+int busyCheck(void);
 
-
+int chip_handle = 0;
 int main() {
     puts("start");
-    int chip_handle =  lgpio_init();
+    chip_handle =  lgpio_init();
 	gpio_init(chip_handle);
 	//put GPIO 26 as output for NSS-Reset(needs to be high)
 
@@ -122,40 +122,56 @@ int getStatus(int spi_handle, char opcode, char *response, int response_len) {
     printf("Tx Buffer: ");
 	printBuffer(txBuf, response_len);
 	//first check if busy line is low
-	
+	if (busyCheck() == READY) {
 	//send status OP Code
-	return lgSpiXfer(spi_handle, txBuf, response, response_len);
+		return lgSpiXfer(spi_handle, txBuf, response, response_len);
+	}
+	return 0;
 }
 
 void gpio_init(int chip_handle){
 
-	int SX_NRESET =  lgGpioClaimOutput(chip_handle,0, SX_NRESET_PIN, 1); //init high
-	if (SX_NRESET <0 ) {
-		printf("Failure to init GPIO 26: error code %d\n", SX_NRESET);
+	int sx_nreset =  lgGpioClaimOutput(chip_handle,0, SX_NRESET_PIN, HIGH); //init high
+	if (sx_nreset <0 ) {
+		printf("Failure to init GPIO 26: error code %d\n", sx_nreset);
 	}
 	else {
 		printf("NSS INIT success\n");
 	}
+
+	int busy = lgGpioClaimInput(chip_handle, 0, 16); //GPIO 16 input
+
+	if (busy <0 ) {
+		printf("Failure to init GPIO 26: error code %d\n", busy);
+	}
+	else {
+		printf("BUSY INIT success\n");
+	}
+
+	int busyCheck1 = busyCheck();
+	if (busyCheck1 == LOW) {
+		printf("busy line low, is ready");
+	}
+	else if (busyCheck1 == HIGH) {
+		printf("busy line high, not ready");
+	}
+	else {
+		printf("error code %d\n", busyCheck1);
+	}
+		
 }
-	/*int BUSY = lgGpioClaimInput(chip_handle, 0, 16); //GPIO 16 input*/
-
-	/*if (BUSY <0 ) {*/
-		/*printf("Failure to init GPIO 26: error code %d\n", BUSY);*/
-	/*}*/
-	/*else {*/
-		/*printf("BUSY INIT success\n");*/
-	/*}*/
-/*}*/
 
 
-/*int busyCheck(void){*/
-	/*//this function checks the busy pin on the Sx1262, busy pin must be low*/
-	/*//for the chip to receive commands*/
-	/*//Function returns 0, if ready, and returns 1 if busy*/
-	
-	/*int busyStatus= lgGpioRead(chip_handle, BUSY_PIN);*/
-	/*if (busyStatus == 0) {*/
-		/*return 0;*/
-	/*}*/
-	/*return 1; //return the stat*/
-/*}*/
+
+
+int busyCheck(void){
+	//this function checks the busy pin on the Sx1262, busy pin must be low
+	//for the chip to receive commands
+	//Function returns 0, if ready, and returns 1 if busy
+	//MACROS defines as 0 = READY, 1 = BUSY	
+	int busyStatus= lgGpioRead(chip_handle, BUSY_PIN);
+	if (busyStatus == LOW) {
+		return READY;
+	}
+	return  BUSY; //return the stat
+}
