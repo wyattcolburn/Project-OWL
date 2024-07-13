@@ -3,9 +3,6 @@
 #include "spi_loopback.h"
 
 // Function prototypes
-void lgpio_init(void);
-int spiHandle(int spiDev, int spiChannel, int spiBaud, int spiFlag);
-void printBuffer(const char *buffer, int len);
 
 int main() {
     puts("start");
@@ -49,7 +46,7 @@ int main() {
     return 0;
 }
 
-void lgpio_init(void) {
+int lgpio_init(void) {
     uint8_t h;
     h = lgGpiochipOpen(0);
 
@@ -58,6 +55,7 @@ void lgpio_init(void) {
     } else {
         puts("Failed to open GPIO chip");
     }
+    return h;
 }
 
 int spiHandle(int spiDev, int spiChannel, int spiBaud, int spiFlag) {

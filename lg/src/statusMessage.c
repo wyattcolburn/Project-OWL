@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <lgpio.h>
-#include "spi_loopback.h"
+#include "statusMessage.h"
 
 
 #define GET_STATUS_OP                   UINT8_C(0xC0)
@@ -169,9 +169,46 @@ int busyCheck(void){
 	//for the chip to receive commands
 	//Function returns 0, if ready, and returns 1 if busy
 	//MACROS defines as 0 = READY, 1 = BUSY	
-	int busyStatus= lgGpioRead(chip_handle, BUSY_PIN);
+	int busyStatus= lgGpioRead(chip_handle, BUSY_PIN); 
 	if (busyStatus == LOW) {
-		return READY;
+  	return READY;
 	}
 	return  BUSY; //return the stat
+}
+
+void tx_mode(){
+  /*
+  1) Go into STDBY MODE, using SetStandby 
+  2) Set packet type--SetPacketType
+  3) Define  the RF frequency--SetRfFrequency
+  4) Define power ampl confi--SetPaConfig()
+  5) Define output power and ramping time with command 
+        SetTxParams()
+  6) Define where the data payload will stored with command 
+      SetBufferBaseAddress()
+  7) Send payload to data buffer--> WriteBuffer()
+  8) Define modulation paramter according to chosen protocol 
+      with command SetModulationParams()
+
+  9) Define frame format with SetPacketParams()^2
+  10) Map TxDone IRQ to a DIO (DIO 1,2,or 3)
+  11) Define a sync value: use command WriteReg() to write value to register via direct access
+  12) Set circuit in transmitter mode to start tranmsiion SetTx(), use param to enable Timeout
+  13) Wait for IRQ TxDone  or timeout-> chip once finished will go into STDBY_RC mode
+  14) Clear IRQ TxDone Flag
+  */
+
+
+  
+  
+}
+
+
+int sendCommand(int spi_handle, char command, int command_len){
+
+  
+
+
+
+
 }
