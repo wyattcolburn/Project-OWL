@@ -1,8 +1,7 @@
 #include <stdio.h>
 #include <lgpio.h>
-#include <math.h>
 #include "statusMessage.h"
-#include "sx1262x_defs_custom.h"
+
 
 #define GET_STATUS_OP                   UINT8_C(0xC0)
 #define GET_STATS_OP                    UINT8_C(0x10)
@@ -45,7 +44,6 @@ int getStatus(int spi_handle, char opcode, char *response, int response_len);
 int busyCheck(void);
 
 int chip_handle = 0;
-int spi_handle = 0;
 int main() {
     puts("start");
     chip_handle =  lgpio_init();
@@ -53,7 +51,7 @@ int main() {
 	//put GPIO 26 as output for NSS-Reset(needs to be high)
 
     // Open the SPI device, spi_handle is a handle
-    spi_handle = spiHandle(0, 0, 5000000, 0);
+    int spi_handle = spiHandle(0, 0, 5000000, 0);
     if (spi_handle < 0) {
         printf("SPI port failed to open: error code %d\n", spi_handle);
         return 1;
@@ -188,7 +186,7 @@ void wait_on_busy(void){
 
 void tx_mode(){
   /*
-  1) Go in to STDBY MODE, using SetStandby 
+  1) Go into STDBY MODE, using SetStandby 
   2) Set packet type--SetPacketType
   3) Define  the RF frequency--SetRfFrequency
   4) Define power ampl confi--SetPaConfig()
@@ -208,41 +206,13 @@ void tx_mode(){
   14) Clear IRQ TxDone Flag
   */
 
-	set_standby_mode();
-	set_packet_type(LORA_PKT_TYPE);
+
   
   
 }
-void set_standby_mode(){
-	//0 for RC
-	//1 for XOCX
-	sendCommand(spi_handle, SET_STANDBY_OP, 0, 1); //step 1
-}
-void set_packet_type(uint8_t packet_type){
-	if(packet_type == LORA_PKT_TYPE ||
-        packet_type == GFSK_PKT_TYPE)
-    {
-		sendCommand(spi_handle, SET_PACKET_TYPE_OP, &packet_type, 1);
-	}
-}
 
-void set_rf_frequency(uint32_t frequency_mhz){
-	uint8_t buff[4];
-    uint32_t sx_freq = 0;
 
-    // Calculate RF frequency
-    sx_freq = (uint32_t)((double) frequency_mhz / (double) FREQ_STEP);
-
-    buff[0] = (uint8_t) ((sx_freq >> 24) & 0xFF);
-    buff[1] = (uint8_t) ((sx_freq >> 16) & 0xFF);
-    buff[2] = (uint8_t) ((sx_freq >> 8) & 0xFF);
-    buff[3] = (uint8_t) (sx_freq & 0xFF);
-
-	sendCommand(spi_handle, SET_RF_FREQUENCY_OP, buff, 4);
-
-}
-//do we want to have this return a value if the message goes through??
-void sendCommand(int spi_handle, uint8_t opcode, uint8_t* data, int command_len){
+int sendCommand(int spi_handle, uint8_t opcode, uint8_t* data, int command_len){
 	//this function sends commands does not look for their resposne
 	//create a buffer first of uint8_t data type
 	uint8_t tx_buffer[1+command_len];
@@ -256,8 +226,13 @@ void sendCommand(int spi_handle, uint8_t opcode, uint8_t* data, int command_len)
 	}
 	int Status = lgSpiWrite(spi_handle, (const char *) tx_buffer, command_len + 1);
 	if (opcode != SET_SLEEP_OP) {
-		wait_on_busy();
+		//i
 	}
+
+	if (Status >= 0 ) {
+		return 1;
+	}
+	return 0;
 }
 
 
