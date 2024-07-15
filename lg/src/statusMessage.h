@@ -29,6 +29,12 @@ int send_read_command(int spi_handle, uint8_t command, uint8_t* data, int comman
 void set_standby_mode();
 void set_packet_type(uint8_t packet_type);
 void set_rf_frequency(uint32_t frequency_mhz);
+void set_pa_config(uint8_t pa_duty_cycle, uint8_t hp_max, uint8_t device_sel);
+void set_tx_config(int8_t power, uint8_t ramp_time);
 
+uint8_t read_registers(uint16_t reg_addr, uint8_t* data, uint8_t len);
+
+
+uint8_t write_registers(uint16_t reg_addr, uint8_t* data, uint8_t len);
 
 #endif 

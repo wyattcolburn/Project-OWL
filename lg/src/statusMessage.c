@@ -210,7 +210,8 @@ void tx_mode(){
 
 	set_standby_mode();
 	set_packet_type(LORA_PKT_TYPE);
-  
+	set_rf_frequency(2); //idk what frequency to run
+
   
 }
 void set_standby_mode(){
@@ -241,6 +242,82 @@ void set_rf_frequency(uint32_t frequency_mhz){
 	sendCommand(spi_handle, SET_RF_FREQUENCY_OP, buff, 4);
 
 }
+
+void set_pa_config(uint8_t pa_duty_cycle, uint8_t hp_max, uint8_t device_sel){
+
+	if(pa_duty_cycle > 0x04)
+        return; // Do nothing in this case
+
+    if(hp_max > 0x07) // Clamp to the recommended max as per datasheet
+        hp_max = 0x07;
+
+    if(device_sel != 0x00 && device_sel != 0x01)
+        return; // Do nothing in this case
+
+    uint8_t pa_config_buff[4] = {pa_duty_cycle, hp_max, device_sel, 0x01};
+	sendCommand(spi_handle, SET_PA_CONFIG_OP, pa_config_buff, 4);
+}
+
+void set_tx_params(int8_t power, uint8_t ramp_time){
+
+	uint8_t tx_clamp_config_val;
+	read_registers(REG_TX_CLAMP_CONFIG, &tx_clamp_config_val, 1);
+	tx_clamp_config_val |= 0x1E;
+    write_registers(REG_TX_CLAMP_CONFIG, &tx_clamp_config_val, 1);
+
+
+	set_pa_config(0x04, 0x07, SX1262_DEV_TYPE);
+	if (power < -9 ){
+		power = -9;
+	}
+	else if (power > 22) {
+		power = 22;
+	}
+	uint8_t ocp_setting = OCP_SX1262_140_MA;
+	write_registers(REG_OCP_CONFIG, (const char *) &ocp_setting, 1); //whhy &
+	
+	if (ramp_time > SET_RAMP_3400U) {
+		ramp_time = SET_RAMP_3400U;
+	}
+	uint8_t tx_config_buff[2] = {power, ramp_time};
+	sendCommand(spi_handle, SET_TX_PARAM_OP, tx_config_buff, 2);
+}
+
+
+
+uint8_t write_registers(uint16_t reg_addr, uint8_t * data, uint8_t len) {
+	//ISSUES MIGHT ARISE WITH NSS going high and low through multiple spi operations
+	uint8_t status;
+	uint8_t cmd_addr[3] = {WRITE_REG_OP, (uint8_t) ((reg_addr >> 8) & (0x00FF)),
+						  (uint8_t) (reg_addr & 0x00FF)};
+	uint8_t spiWrite = lgSpiWrite(spi_handle, (const char *) cmd_addr, 3);
+	uint8_t spiWrite2 = lgSpiWrite(spi_handle, (const char *) data, len - 1);
+	uint8_t spiRead_Write = lgSpiXfer(spi_handle, (const char *) data + (len -1),(char *) &status, 1);
+
+	wait_on_busy();
+
+	return status;
+
+}
+uint8_t read_registers(uint16_t reg_addr, uint8_t* data, uint8_t len){
+
+	uint8_t status;
+	uint8_t cmd_addr[3] = {READ_REG_OP, (uint8_t) ((reg_addr >> 8) & (0x00FF)),
+						  (uint8_t) (reg_addr &0x00FF)};
+	
+	int spiWrite = lgSpiWrite(spi_handle, (const char *) cmd_addr, 3); 
+	int spiRead_Write = lgSpiXfer(spi_handle, (const char *) NO_OPERATION, &status, 1);//dif from quad, 
+	int spiRead = lgSpiRead(spi_handle, (char *) data, len); //reads data into paramters
+
+	wait_on_busy();
+
+	return status;
+}
+
+
+
+
+
 //do we want to have this return a value if the message goes through??
 void sendCommand(int spi_handle, uint8_t opcode, uint8_t* data, int command_len){
 	//this function sends commands does not look for their resposne
