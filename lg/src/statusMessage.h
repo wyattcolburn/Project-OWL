@@ -5,7 +5,7 @@
 
 #define BUSY_PIN 16
 #define SX_NRESET_PIN 26
-#define TX_PIN 
+#define TX_PIN 6 
 #define LOW 0
 #define HIGH 1
 
