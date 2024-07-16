@@ -58,16 +58,20 @@ int main() {
         printf("SPI port failed to open: error code %d\n", spi_handle);
         return 1;
     }
-	uint8_t command = 0xC0;
-	uint8_t data = 0x00;
-	int command_len = 1;
-	int result = send_read_command(spi_handle, command, &data, command_len);
+	/*uint8_t command = 0xC0;*/
+	/*uint8_t data = 0x00;*/
+	/*int command_len = 1;*/
+	/*int result = send_read_command(spi_handle, command, &data, command_len);*/
 	
-    if (result) {
-        printf("Command sent successfully\n");
-    } else {
-        printf("Failed to send command\n");
-    }
+    /*if (result) {*/
+        /*printf("Command sent successfully\n");*/
+    /*} else {*/
+        /*printf("Failed to send command\n");*/
+    /*}*/
+
+	uint8_t tx_clamp_config_val;
+    read_registers(REG_TX_CLAMP_CONFIG, &tx_clamp_config_val, 1);
+	printf("0x%02X\n", tx_clamp_config_val);
 	 /*Example opcode for status message*/
 	  /*Replace with actual opcode*/
     /*char response[2] = {0}; // Buffer to hold the response*/
@@ -82,6 +86,7 @@ int main() {
     /*printBuffer(response, sizeof(response));*/
 
     // Close SPI device
+	//
     int closeStatus = lgSpiClose(spi_handle);
     if (closeStatus < 0) {
         printf("Failed to close SPI device: error code %d\n", closeStatus);
@@ -232,11 +237,6 @@ void tx_mode(void){
 	wait_on_TX_IRQ();
 	puts("tx has been finished");
 	//need to clear the irq flag??
-
-
-	
-
-
 
 }
 
@@ -416,20 +416,64 @@ uint8_t write_registers(uint16_t reg_addr, uint8_t * data, uint8_t len) {
 	return status;
 
 }
-uint8_t read_registers(uint16_t reg_addr, uint8_t* data, uint8_t len){
+uint8_t read_registers(uint16_t reg_addr, uint8_t* data, uint8_t len) {
+    puts("Starting to read registers");
 
-	uint8_t status;
-	uint8_t cmd_addr[3] = {READ_REG_OP, (uint8_t) ((reg_addr >> 8) & (0x00FF)),
-						  (uint8_t) (reg_addr &0x00FF)};
-	
-	int spiWrite = lgSpiWrite(spi_handle, (const char *) cmd_addr, 3); 
-	int spiRead_Write = lgSpiXfer(spi_handle, (const char *) NO_OPERATION, &status, 1);//dif from quad, 
-	int spiRead = lgSpiRead(spi_handle, (char *) data, len); //reads data into paramters
+    uint8_t status;
+    uint8_t cmd_addr[3] = {READ_REG_OP, (uint8_t)((reg_addr >> 8) & 0x00FF),
+                           (uint8_t)(reg_addr & 0x00FF)};
 
-	wait_on_busy();
+    // Write the command and address
+    int spiWrite = lgSpiWrite(spi_handle, (const char *)cmd_addr, 3);
+    if (spiWrite >= 0) {
+        puts("SPI write successful");
+    } else {
+        puts("SPI write failed");
+        return 0xFF; // Error status
+    }
 
-	return status;
+    // Dummy write to initiate read
+    int spiRead_Write = lgSpiXfer(spi_handle, (const char *)NO_OPERATION, (char *)&status, 1);
+    if (spiRead_Write >= 0) {
+        printf("SPI read/write successful, status: 0x%02X\n", status);
+    } else {
+        puts("SPI read/write failed");
+        return 0xFF; // Error status
+    }
+
+    // Read the data
+    int spiRead = lgSpiRead(spi_handle, (char *)data, len);
+    if (spiRead >= 0) {
+        puts("SPI read successful");
+        for (int i = 0; i < len; i++) {
+            printf("data[%d] = 0x%02X\n", i, data[i]);
+        }
+    } else {
+        puts("SPI read failed");
+        return 0xFF; // Error status
+    }
+
+    wait_on_busy();
+
+    return 0x00; // Success
 }
+/*uint8_t read_registers(uint16_t reg_addr, uint8_t* data, uint8_t len){*/
+	/*puts("reading registers");*/
+
+	/*uint8_t status;*/
+	/*uint8_t cmd_addr[3] = {READ_REG_OP, (uint8_t) ((reg_addr >> 8) & (0x00FF)),*/
+						  /*(uint8_t) (reg_addr &0x0FF)};*/
+	
+	/*int spiWrite = lgSpiWrite(spi_handle, (const char *) cmd_addr, 3); */
+	/*(spiWrite >= 0) ? puts("spi write read") : puts("cannot write");*/
+
+	/*int spiRead_Write = lgSpiXfer(spi_handle, (const char *) NO_OPERATION, &status, 1);//dif from quad, */
+	/*int spiRead = lgSpiRead(spi_handle, (char *) data, len); //reads data into paramters*/
+
+	/*wait_on_busy();*/
+
+	/*return status;*/
+/*}*/
 
 
 //do we want to have this return a value if the message goes through??

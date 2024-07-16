@@ -5,7 +5,8 @@
 
 #define BUSY_PIN 16
 #define SX_NRESET_PIN 26
-#define TX_PIN 6 
+#define TX_PIN 6
+#define CS_PIN 5
 #define LOW 0
 #define HIGH 1
 
@@ -49,6 +50,8 @@ void set_dio_irq_params(uint16_t irq_mask, uint16_t dio1_mask, uint16_t dio2_mas
 void set_tx_mode(uint32_t timeout);
 void wait_on_TX_IRQ(void);
 void tx_mode(void);
-
+void nss_select(void);
+void nss_deselect(void);
 #endif
+
 
