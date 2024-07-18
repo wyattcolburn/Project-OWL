@@ -119,72 +119,6 @@ int spiHandle(int spiDev, int spiChannel, int spiBaud, int spiFlag) {
     return spiOpenVal;
 }
 
-void printBuffer(const char *buffer, int len) {
-    // This function takes a buffer and outputs it byte by byte
-    for (int i = 0; i < len; i++) {
-        printf("0x%02x ", (unsigned char)buffer[i]);
-    }
-    printf("\n");
-}
-
-int getStatus(int spi_handle, char opcode, char *response, int response_len) {
-
-	//building the buffer
-    char txBuf[response_len];
-    txBuf[0] = opcode; // Set the opcode
-    for (int i = 1; i < response_len; i++) {
-        txBuf[i] = 0x00; // Fill the rest with dummy data
-    }
-    printf("Tx Buffer: ");
-	printBuffer(txBuf, response_len);
-	//first check if busy line is low
-	wait_on_busy();
-	//send status OP Code
-		return lgSpiXfer(spi_handle, txBuf, response, response_len);
-	
-}
-
-
-void gpio_init(int chip_handle){
-
-	int sx_nreset =  lgGpioClaimOutput(chip_handle,0, SX_NRESET_PIN, HIGH); //init high
-	(sx_nreset >= 0 ) ? puts("sx_nreset init") : puts("sx_nreset fail");
-	
-	/*if (sx_nreset <0 ) {*/
-		/*printf("Failure to init GPIO 26: error code %d\n", sx_nreset);*/
-	/*}*/
-	/*else {*/
-		/*printf("NSS INIT success\n");*/
-	/*}*/
-
-	int busy = lgGpioClaimInput(chip_handle, 0, 16); //GPIO 16 input
-	(busy >= 0) ? puts("busy init") : puts("busy fail");
-	
-	/*if (busy <0 ) {*/
-		/*printf("Failure to init GPIO 26: error code %d\n", busy);*/
-	/*}*/
-	/*else {*/
-		/*printf("BUSY INIT success\n");*/
-	/*}*/
-
-	int txIRQ = lgGpioClaimInput(chip_handle, 0, 6); //gpio 6 input
-	
-	(txIRQ >= 0) ? puts("tx init") : puts("tx fail");
-	
-	/*int busyCheck1 = busyCheck();*/
-	/*if (busyCheck1 == LOW) {*/
-		/*printf("busy line low, is ready");*/
-	/*}*/
-	/*else if (busyCheck1 == HIGH) {*/
-		/*printf("busy line high, not ready");*/
-	/*}*/
-	/*else {*/
-		/*printf("error code %d\n", busyCheck1);*/
-	/*}*/
-		
-}
-
-
 
 
 void wait_on_busy(void){
@@ -320,7 +254,7 @@ void set_tx_params(int8_t power, uint8_t ramp_time){
 		power = 22;
 	}
 	uint8_t ocp_setting = OCP_SX1262_140_MA;
-	write_registers(REG_OCP_CONFIG, (char *) &ocp_setting, 1); //whhy &
+	write_registers(REG_OCP_CONFIG, (const char *) &ocp_setting, 1); //whhy &
 	
 	if (ramp_time > SET_RAMP_3400U) {
 		ramp_time = SET_RAMP_3400U;

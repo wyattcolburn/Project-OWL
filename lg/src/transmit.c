@@ -59,35 +59,26 @@ int main() {
         printf("SPI port failed to open: error code %d\n", spi_handle);
         return 1;
     }
-	/*uint8_t command = 0xC0;*/
-	/*uint8_t data = 0x00;*/
-	/*int command_len = 1;*/
-	/*int result = send_read_command(spi_handle, command, &data, command_len);*/
+	//testing reading and writing registers
+
+	/*uint8_t tx_clamp_config_val;*/
+	/*read_registers(REG_TX_CLAMP_CONFIG, &tx_clamp_config_val, 1);*/
+	/*printf("0x%02X\n", tx_clamp_config_val);*/
+   
+	/*uint8_t ocp_setting;*/
+	/*read_registers(REG_OCP_CONFIG, &ocp_setting, 1);*/
+	/*printf("0x%02X\n", ocp_setting);*/
+
 	
-    /*if (result) {*/
-        /*printf("Command sent successfully\n");*/
-    /*} else {*/
-        /*printf("Failed to send command\n");*/
-    /*}*/
-	uint8_t tx_clamp_config_val;
-	read_registers(REG_TX_CLAMP_CONFIG, &tx_clamp_config_val, 1);
-	printf("0x%02X\n", tx_clamp_config_val);
-	 /*Example opcode for status message*/
-	  /*Replace with actual opcode*/
-    /*char response[2] = {0}; // Buffer to hold the response*/
+	/*uint8_t ocp_setting2 = OCP_SX1262_140_MA;*/
+	/*uint8_t statusWrite = write_registers(REG_OCP_CONFIG, &ocp_setting2, 1);*/
+	/*printf("0x%02X\n", statusWrite);*/
 
-    /*int result = getStatus(spi_handle, GET_STATUS_OP, response, sizeof(response));*/
-    /*if (result < 0) {*/
-        /*printf("Failed to get status: error code %d\n", result);*/
-        /*lgSpiClose(spi_handle);*/
-        /*return 1;*/
-    /*}*/
-    /*printf("Received status: ");*/
-    /*printBuffer(response, sizeof(response));*/
+	/*uint8_t ocp_setting3;*/
+	/*read_registers(REG_OCP_CONFIG, &ocp_setting3, 1);*/
+	/*printf("0x%02X\n", ocp_setting3);*/
 
-    // Close SPI device
-	//
-    int closeStatus = lgSpiClose(spi_handle);
+	int closeStatus = lgSpiClose(spi_handle);
     if (closeStatus < 0) {
         printf("Failed to close SPI device: error code %d\n", closeStatus);
         return 1;
@@ -96,37 +87,6 @@ int main() {
 
     return 0;
 }
-
-/*int lgpio_init(void) {*/
-    /*uint8_t h;*/
-    /*h = lgGpiochipOpen(0);*/
-
-    /*if (h >= 0) {*/
-        /*puts("GPIO chip opened");*/
-    /*} else {*/
-        /*puts("Failed to open GPIO chip");*/
-    /*}*/
-	/*return h;*/
- /*}*/
-
-/*int spiHandle(int spiDev, int spiChannel, int spiBaud, int spiFlag) {*/
-    /*int spiOpenVal = lgSpiOpen(spiDev, spiChannel, spiBaud, spiFlag);*/
-    /*if (spiOpenVal >= 0) {*/
-        /*puts("SPI port open success");*/
-    /*} else {*/
-        /*puts("SPI port failed to open");*/
-    /*}*/
-    /*return spiOpenVal;*/
-/*}*/
-
-/*void printBuffer(const char *buffer, int len) {*/
-    /*// This function takes a buffer and outputs it byte by byte*/
-    /*for (int i = 0; i < len; i++) {*/
-        /*printf("0x%02x ", (unsigned char)buffer[i]);*/
-    /*}*/
-    /*printf("\n");*/
-/*}*/
-
 int getStatus(int spi_handle, char opcode, char *response, int response_len) {
 
 	//building the buffer
@@ -143,27 +103,6 @@ int getStatus(int spi_handle, char opcode, char *response, int response_len) {
 		return lgSpiXfer(spi_handle, txBuf, response, response_len);
 	
 }
-
-
-/*void gpio_init(int chip_handle){*/
-
-	/*int sx_nreset =  lgGpioClaimOutput(chip_handle,0, SX_NRESET_PIN, HIGH); //init high*/
-	/*(sx_nreset >= 0 ) ? puts("sx_nreset init") : puts("sx_nreset fail");*/
-	
-
-	/*int busy = lgGpioClaimInput(chip_handle, 0, 16); //GPIO 16 input*/
-	/*(busy >= 0) ? puts("busy init") : puts("busy fail");*/
-	
-
-	/*int txIRQ = lgGpioClaimInput(chip_handle, 0, 6); //gpio 6 input*/
-	
-	/*(txIRQ >= 0) ? puts("tx init") : puts("tx fail");*/
-	
-	/*int chip_select = lgGpioClaimOutput(chip_handle,0, CS_PIN, HIGH);*/
-	/*[>(chip_select >= 0) ? puts("CS init") : ("CS failed");<]*/
-
-	/*(chip_select >= 0 ) ? puts("cs init") : puts("cs fail");*/
-/*}*/
 
 void nss_select(){
 	/*
@@ -225,8 +164,13 @@ void wait_on_TX_IRQ(void) {
 
 	/*write_registers(CLEAR_IRQ_STATUS_OP, (uint8_t *)tx_irq_status, 1);*/
 /*}	*/
+
 uint8_t write_registers(uint16_t reg_addr, uint8_t * data, uint8_t len) {
+	puts("writing to register");
+
 	//ISSUES MIGHT ARISE WITH NSS going high and low through multiple spi operations
+	nss_select();
+
 	uint8_t status;
 	uint8_t cmd_addr[3] = {WRITE_REG_OP, (uint8_t) ((reg_addr >> 8) & (0x00FF)),
 						  (uint8_t) (reg_addr & 0x00FF)};
@@ -234,6 +178,7 @@ uint8_t write_registers(uint16_t reg_addr, uint8_t * data, uint8_t len) {
 	uint8_t spiWrite2 = lgSpiWrite(spi_handle, (const char *) data, len - 1);
 	uint8_t spiRead_Write = lgSpiXfer(spi_handle, (const char *) data + (len -1),(char *) &status, 1);
 
+	nss_select();
 	wait_on_busy();
 
 	return status;
