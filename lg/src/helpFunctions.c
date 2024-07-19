@@ -4,7 +4,6 @@
 #include "statusMessage.h"
 #include "sx1262x_defs_custom.h"
 #include "helpFunctions.h"
-extern int spi_handle;
 
 int lgpio_init(void) {
     uint8_t h;

@@ -40,6 +40,7 @@ void set_buffer_base_addr(uint8_t tx_base_addr, uint8_t rx_base_addr);
 
 uint8_t write_registers(uint16_t reg_addr, uint8_t* data, uint8_t len);
 
+void factoryReset();
 
 uint8_t write_buffer(uint8_t offset, uint8_t* data, uint16_t len);
 
@@ -48,6 +49,20 @@ void config_packet_params(uint8_t preamble_length, uint8_t header_type, uint8_t 
 void set_dio_irq_params(uint16_t irq_mask, uint16_t dio1_mask, uint16_t dio2_mask,
 						uint16_t dio3_mask);
 
+void tx_mode_attempt(uint8_t* data, uint16_t);
+
+void clear_tx_irq();
+
+uint16_t get_irq_status();
+
+void clear_irq_status(uint16_t status_mask);
+
+void set_regulator_mode();
+uint8_t get_status();
+uint16_t get_device_errors();
+void print_status_information();
+void print_device_errors();
+void clear_device_errors();
 void set_tx_mode(uint32_t timeout);
 void wait_on_TX_IRQ(void);
 void tx_mode(void);

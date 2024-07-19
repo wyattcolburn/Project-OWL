@@ -44,7 +44,7 @@ int spiHandle(int spiDev, int spiChannel, int spiBaud, int spiFlag);
 void printBuffer(const char *buffer, int len);
 int getStatus(int spi_handle, char opcode, char *response, int response_len);
 void wait_on_busy(void);
-void tx_mode_attempt(uint8_t* data, uint16_t len);
+/*void tx_mode_attempt(uint8_t* data, uint16_t len);*/
 int chip_handle = 0;
 int spi_handle = 0;
 int main() {
@@ -52,34 +52,47 @@ int main() {
     chip_handle = lgpio_init();
 	gpio_init(chip_handle);
 	//put GPIO 26 as output for NSS-Reset(needs to be high)
-
+	factoryReset();
     // Open the SPI device, spi_handle is a handle
     spi_handle = spiHandle(0, 0, 5000000, 0);
     if (spi_handle < 0) {
         printf("SPI port failed to open: error code %d\n", spi_handle);
         return 1;
     }
-	//testing reading and writing registers
+	//chip init
 
-	/*uint8_t tx_clamp_config_val;*/
-	/*read_registers(REG_TX_CLAMP_CONFIG, &tx_clamp_config_val, 1);*/
-	/*printf("0x%02X\n", tx_clamp_config_val);*/
+	/*wait_on_busy();*/
+	/*print_status_information();*/
+	/*print_device_errors(); //will raise XOSC errors on startup, just clear device errors? data sheet page 82*/
+	/*clear_device_errors();*/
+
+	/*set_regulator_mode(); //LDO mode*/
+	/*wait_on_busy();*/
+	/*print_status_information();*/
+	/*print_device_errors();*/
+	/*//testing reading and writing registers*/
+
+	wait_on_busy();
+	uint8_t tx_clamp_config_val;
+	read_registers(REG_TX_CLAMP_CONFIG, &tx_clamp_config_val, 1);
+	printf("0x%02X\n", tx_clamp_config_val);
    
-	/*uint8_t ocp_setting;*/
-	/*read_registers(REG_OCP_CONFIG, &ocp_setting, 1);*/
-	/*printf("0x%02X\n", ocp_setting);*/
 
 	
 	/*uint8_t ocp_setting2 = OCP_SX1262_140_MA;*/
 	/*uint8_t statusWrite = write_registers(REG_OCP_CONFIG, &ocp_setting2, 1);*/
 	/*printf("0x%02X\n", statusWrite);*/
 
+	/*uint8_t ocp_setting;*/
+	/*read_registers(REG_OCP_CONFIG, &ocp_setting, 1);*/
+	/*printf("0x%02X\n", ocp_setting);*/
+
 	/*uint8_t ocp_setting3;*/
 	/*read_registers(REG_OCP_CONFIG, &ocp_setting3, 1);*/
 	/*printf("0x%02X\n", ocp_setting3);*/
 
-	uint8_t data_buffer[3] = {1,2,3};
-	tx_mode_attempt(data_buffer, 3);	
+	/*uint8_t data_buffer[3] = {1,2,3};*/
+	/*tx_mode_attempt(data_buffer, 3);	*/
 	int closeStatus = lgSpiClose(spi_handle);
     if (closeStatus < 0) {
         printf("Failed to close SPI device: error code %d\n", closeStatus);
@@ -88,22 +101,6 @@ int main() {
     printf("SPI device closed successfully\n");
 
     return 0;
-}
-int getStatus(int spi_handle, char opcode, char *response, int response_len) {
-
-	//building the buffer
-    char txBuf[response_len];
-    txBuf[0] = opcode; // Set the opcode
-    for (int i = 1; i < response_len; i++) {
-        txBuf[i] = 0x00; // Fill the rest with dummy data
-    }
-    printf("Tx Buffer: ");
-	printBuffer(txBuf, response_len);
-	//first check if busy line is low
-	wait_on_busy();
-	//send status OP Code
-		return lgSpiXfer(spi_handle, txBuf, response, response_len);
-	
 }
 
 void nss_select(){
@@ -120,7 +117,7 @@ void nss_select(){
 		/*SLEEP_MS(1);*/
 		/*nss_status = lgGpioRead(chip_handle, CS_PIN);*/
 	/*}*/
-	puts("CS LOW");
+	/*puts("CS LOW");*/
 
 }
 void nss_deselect(){
@@ -133,7 +130,7 @@ void nss_deselect(){
 		/*SLEEP_MS(1);*/
 		/*nss_status = lgGpioRead(chip_handle, CS_PIN);*/
 	/*}*/
-	puts("CS HIGH");
+	/*puts("CS HIGH");*/
 }
 
 void wait_on_busy(void){
@@ -147,16 +144,42 @@ void wait_on_busy(void){
 }
 
 
-/*void clear_tx_irq(){*/
+void clear_tx_irq(){
 
-	/*//not sure how to do this? Think I am clearing all the status*/
+	sendCommand(spi_handle, CLEAR_IRQ_STATUS_OP, 0x0, 1); //clear out the first bit
+														  
+	
+														  
+	//not sure how to do this? Think I am clearing all the status
 	/*uint8_t NOP_buffer[2] = {NO_OPERATION, NO_OPERATION};*/
 	/*uint16_t  tx_irq_status = read_registers(GET_IRQ_STATUS_OP, NOP_buffer, 2);*/
 	
 	/*tx_irq_status &= ~TX_DONE_MASK;*/
 
 	/*write_registers(CLEAR_IRQ_STATUS_OP, (uint8_t *)tx_irq_status, 1);*/
-/*}	*/
+}	
+uint16_t get_irq_status() {
+	uint8_t irq_buff[2];
+	uint16_t result;
+
+	getCommand(spi_handle, GET_IRQ_STATUS_OP, irq_buff, 2);
+	result = ((irq_buff[0] & 0x0003) << 8) & (irq_buff[1] & 0x00FF);
+	//only care about the last 2 bits, then shift them to the right
+	//only care about last 8 bits? combine tham
+	//why what is going on, this tells status on all irq, there are only 10
+	//so you can look at which bits are high for status??
+
+	return result;
+}
+
+void clear_irq_status(uint16_t status_mask){
+
+	uint8_t irq_buff[2] = {(uint8_t) (((uint16_t) status_mask >> 8) & 0x0003), (uint8_t) ((uint16_t) status_mask & 0x00FF)};
+
+	sendCommand(spi_handle, CLEAR_IRQ_STATUS_OP, irq_buff, 2);
+
+}
+
 
 uint8_t write_registers(uint16_t reg_addr, uint8_t * data, uint8_t len) {
 	puts("writing to register");
@@ -185,48 +208,17 @@ uint8_t read_registers(uint16_t reg_addr, uint8_t* data, uint8_t len){
 						  (uint8_t) (reg_addr &0x0FF)};
 
 	nss_select(); //should go low
+	
 	int spiWrite = lgSpiWrite(spi_handle, (const char *) cmd_addr, 3); 
-	(spiWrite >= 0) ? puts("spi write read") : puts("cannot write");
+	/*(spiWrite >= 0) ? puts("spi write read") : puts("cannot write");*/
 
 	int spiRead_Write = lgSpiXfer(spi_handle, (const char *) NO_OPERATION, (char *) &status, 1);//dif from quad, 
 	int spiRead = lgSpiRead(spi_handle, (char *) data, len); //reads data into paramters
+	
 	nss_deselect(); //nss goes back high
 	wait_on_busy();
 
 	return status;
-}
-
-
-int send_read_command(int spi_handle, uint8_t command, uint8_t* data, int command_len) {
-    // Create a buffer with the size of command + data
-    uint8_t tx_buffer[1 + command_len];
-    uint8_t rx_buffer[1 + command_len]; // Buffer to receive the response
-
-    // Place the command at the start of the buffer
-    tx_buffer[0] = command;
-
-    // Copy the data into the buffer starting from index 1
-    for (int bufferIndex = 1; bufferIndex < (command_len + 1); bufferIndex++) {
-        tx_buffer[bufferIndex] = data[bufferIndex - 1];
-    }
-
-    // Initialize the rx_buffer to ensure it is empty before the transfer
-    for (int i = 0; i < (1 + command_len); i++) {
-        rx_buffer[i] = 0;
-    }
-
-    // Perform the SPI transfer
-    int Status = lgSpiXfer(spi_handle, (const char *)tx_buffer, (char *)rx_buffer, command_len + 1);
-
-    if (Status >= 0) {
-        // If transfer is successful, process the received data if needed
-        // For example, print the received data
-        for (int i = 0; i < Status; i++) {
-            printf("Received byte %d: %02x\n", i, rx_buffer[i]);
-        }
-        return 1;
-    }
-    return 0;
 }
 
 void tx_mode_attempt(uint8_t* data, uint16_t len) {
@@ -242,6 +234,7 @@ void tx_mode_attempt(uint8_t* data, uint16_t len) {
 	set_tx_params(0, SET_RAMP_3400U);
 	puts("4");
 
+	print_status_information();
 	set_buffer_base_addr(0x00, 0x00);
 	puts("5");
 	write_buffer(0x00, data, len);
@@ -249,16 +242,23 @@ void tx_mode_attempt(uint8_t* data, uint16_t len) {
 
 	config_modulation_params(LORA_SF_7, LORA_BW_500, LORA_CR_4_5, 0) ;
 	puts("7");
+	print_status_information();
 	config_packet_params(12, PKT_EXPLICIT_HDR, len, PKT_CRC_OFF, STD_IQ_SETUP);
 	puts("8");
+	print_status_information();
 	
 	set_dio_irq_params(0xFFFF,TX_DONE_MASK, 0x0000, 0x0000); //sets dio1 as tx
 	puts("9");
+	print_status_information();
 	set_tx_mode(0x00); 
 	puts("10");
 
 	 
 	wait_on_TX_IRQ();
+	clear_tx_irq();
+
+	puts("transmission success"); //should go back into standby mode, can we check
+	print_status_information();
 }
 
 
@@ -271,7 +271,7 @@ void tx_mode_attempt(uint8_t* data, uint16_t len) {
 void set_standby_mode(){
 	//0 for RC
 	//1 for XOCX
-	sendCommand(spi_handle, SET_STANDBY_OP, 0, 1); //step 1
+	sendCommand(spi_handle, SET_STANDBY_OP, 0, 1); //step 1, standby rc
 }
 void set_packet_type(uint8_t packet_type){
 	if(packet_type == LORA_PKT_TYPE ||
@@ -329,7 +329,11 @@ void set_tx_params(int8_t power, uint8_t ramp_time){
 	}
 	uint8_t ocp_setting = OCP_SX1262_140_MA;
 	write_registers(REG_OCP_CONFIG, &ocp_setting, 1); //whhy &
-	
+
+	uint8_t reg_reading;
+	read_registers(REG_OCP_CONFIG, &reg_reading, 1);
+	printf("0x%02X\n", reg_reading);
+
 	if (ramp_time > SET_RAMP_3400U) {
 		ramp_time = SET_RAMP_3400U;
 	}
@@ -402,12 +406,15 @@ void set_dio_irq_params(uint16_t irq_mask, uint16_t dio1_mask, uint16_t dio2_mas
 }
 
 void set_tx_mode(uint32_t timeout) {
+	//setting to zero is one shot mode, will return to STBY_RC mode afterward
+
 	uint8_t timeout_buff[3];
     timeout_buff[0] = (uint8_t) (timeout >> 16) & 0xFF;
     timeout_buff[1] = (uint8_t) (timeout >> 8) & 0xFF;
     timeout_buff[2] = (uint8_t) timeout & 0xFF;
 
 	sendCommand(spi_handle, SET_TX_MODE_OP, timeout_buff, 3);
+	/*print_status_information();*/
 }
 
 void wait_on_TX_IRQ(void) {
@@ -440,4 +447,140 @@ void sendCommand(int spi_hanlde, uint8_t opcode, uint8_t* data, uint8_t len){
 		wait_on_busy();
 	}
 }
+
+void send_packet(uint8_t* data, uint16_t data_len) {
+
+	set_buffer_base_addr(0x00, 0x00); //does this order matter
+	write_buffer(0x00, data, data_len);
+
+	set_dio_irq_params(0xFFFF, TX_DONE_MASK, 0x0000, 0x0000); //setup tx done irq
+	set_tx_mode(0x00);
+
+	wait_on_TX_IRQ();
+
+	//need to clear IRQ
+
+ }
 	
+uint8_t get_status(){
+
+	uint8_t status;
+
+	status = getCommand(spi_handle, GET_STATUS_OP, NULL, 0);
+
+	return status;
+}
+
+void print_status_information(){
+
+	uint8_t status = get_status();
+
+	 switch((status & 0x70) >> 4)
+    {
+        case 0x2:
+            printf("\tChip Mode: STDBY RC MODE\n");
+            break;
+        case 0x3:
+            printf("\tChip Mode: STDBY XOSC MODE\n");
+            break;
+        case 0x4:
+            printf("\tChip Mode: FS MODE\n");
+            break;
+        case 0x5:
+            printf("\tChip Mode: RX Mode\n");
+            break;
+        case 0x6:
+            printf("\tChip Mode: TX Mode\n");
+            break;
+        default:
+            printf("\tChip Mode: Unused/RFU \n");
+    }
+
+    switch((status & 0x0E) >> 1)
+    {
+        case 0x2:
+            printf("\tCommand Status: Data is available to host\n");
+            break;
+        case 0x3:
+            printf("\tCommand Status: Command timeout\n");
+            break;
+        case 0x4:
+            printf("\tCommand Status: Command processing error\n");
+            break;
+        case 0x5:
+            printf("\tCommand Status: Failure to execute command\n");
+            break;
+        case 0x6:
+            printf("\tCommand Status: Command TX done\n");
+            break;
+        default:
+            printf("\tCommand Status: Unused/RFU\n");
+    }
+}
+void print_device_errors()
+{
+    uint16_t errors = get_device_errors();
+
+    if((errors & 0x1FF) == 0x0000)
+        printf("\tNo device errors\n");
+
+    if(errors & RC64_CALIB_ERR_MASK)
+        printf("\t[SX126X Error]: RC64k Calibration Failed\n");
+
+    if(errors & RC13M_CALIB_ERR_MASK)
+        printf("\t[SX126X Error]: RC13M Calibration Failed\n");
+
+    if(errors & PLL_CALIB_ERR_MASK)
+        printf("\t[SX126X Error]: PLL Calibration Failed\n");
+
+    if(errors & ADC_CALIB_ERR_MASK)
+        printf("\t[SX126X Error]: ADC Calibration Failed\n");
+
+    if(errors & IMG_CALIB_ERR_MASK)
+        printf("\t[SX126X Error]: IMG Calibration Failed\n");
+
+    if(errors & XOSC_START_ERR_MASK)
+        printf("\t[SX126X Error]: XOSC Failed To Start\n");
+
+    if(errors & PLL_LOCK_ERR_MASK)
+        printf("\t[SX126X Error]: PLL Failed To Lock\n");
+
+    if(errors & PA_RAMP_ERR_MASK)
+        printf("\t[SX126X Error]: PA Raming Failed\n");
+}
+
+uint16_t get_device_errors(){
+
+	uint8_t dev_errors[2];
+	getCommand(spi_handle, GET_DEV_ERRS_OP, dev_errors, 2);
+
+	uint16_t combined_errors = (uint16_t) ((dev_errors[0] << 8) & 0x0100) | (dev_errors[1] & 0x00FF);
+    return combined_errors;
+}
+void clear_device_errors(){
+
+	uint8_t clear_buff[2] = {0x00};
+
+	sendCommand(spi_handle, CLR_DEV_ERRS_OP, clear_buff, 2);
+}
+void set_regulator_mode() {
+
+	uint8_t regu_mode = 0; //ldo mode only
+
+	sendCommand(spi_handle, SET_REG_MODE_OP, &regu_mode, 1);
+
+}
+
+void factoryReset(){
+
+	int low = lgGpioWrite(chip_handle, SX_NRESET_PIN, LOW);
+
+	SLEEP_MS(100);
+
+	int high = lgGpioWrite(chip_handle, SX_NRESET_PIN, HIGH);
+
+	SLEEP_MS(100);
+
+	wait_on_busy();
+
+}
