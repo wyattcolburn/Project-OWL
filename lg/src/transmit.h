@@ -7,6 +7,8 @@
 #define SX_NRESET_PIN 26
 #define TX_PIN 6
 #define CS_PIN 5
+#define ANT_SW 25
+
 #define LOW 0
 #define HIGH 1
 
@@ -68,6 +70,9 @@ void wait_on_TX_IRQ(void);
 void tx_mode(void);
 void nss_select(void);
 void nss_deselect(void);
+
+void ant_sw_on();
+void ant_sw_off();
 #endif
 
 

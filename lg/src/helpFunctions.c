@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <lgpio.h>
 #include <math.h>
-#include "statusMessage.h"
+#include "transmit.h"
 #include "sx1262x_defs_custom.h"
 #include "helpFunctions.h"
 
@@ -34,6 +34,9 @@ void gpio_init(int chip_handle){
 
 	int txIRQ = lgGpioClaimInput(chip_handle, 0, 6); //gpio 6 input
 	(txIRQ >= 0) ? puts("tx init") : puts("tx fail");	
+
+	int ant_sw = lgGpioClaimOutput(chip_handle, 0, ANT_SW, LOW);
+	(ant_sw >= 0) ? puts("ANT SW init") : puts("ant sw fail");
 }
 void printBuffer(const char *buffer, int len) {
     // This function takes a buffer and outputs it byte by byte

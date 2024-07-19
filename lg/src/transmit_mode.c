@@ -48,17 +48,28 @@ void wait_on_busy(void);
 int chip_handle = 0;
 int spi_handle = 0;
 int main() {
-    puts("start");
-    chip_handle = lgpio_init();
+    
+	puts("start");
+    //gpio init
+	chip_handle = lgpio_init();
 	gpio_init(chip_handle);
 	//put GPIO 26 as output for NSS-Reset(needs to be high)
-	factoryReset();
     // Open the SPI device, spi_handle is a handle
     spi_handle = spiHandle(0, 0, 5000000, 0);
     if (spi_handle < 0) {
         printf("SPI port failed to open: error code %d\n", spi_handle);
         return 1;
     }
+	
+	factoryReset();
+	wait_on_busy(); //so waiting for standby mode
+	print_status_information();
+
+	set_regulator_mode();
+	print_status_information();
+	set_standby_mode(); //into standby rc
+	uint8_t data_buffer[3] = {1,2,3};
+	tx_mode_attempt(data_buffer, 3);	
 	//chip init
 
 	/*wait_on_busy();*/
@@ -72,21 +83,21 @@ int main() {
 	/*print_device_errors();*/
 	/*//testing reading and writing registers*/
 
-	wait_on_busy();
-	uint8_t tx_clamp_config_val;
-	read_registers(REG_TX_CLAMP_CONFIG, &tx_clamp_config_val, 1);
-	printf("0x%02X\n", tx_clamp_config_val);
+	/*wait_on_busy();*/
+	/*uint8_t tx_clamp_config_val;*/
+	/*read_registers(REG_TX_CLAMP_CONFIG, &tx_clamp_config_val, 1);*/
+	/*printf("0x%02X\n", tx_clamp_config_val);*/
    
 
 	
+
+	uint8_t ocp_setting;
+	read_registers(REG_OCP_CONFIG, &ocp_setting, 1);
+	printf("0x%02X\n", ocp_setting);
+
 	/*uint8_t ocp_setting2 = OCP_SX1262_140_MA;*/
 	/*uint8_t statusWrite = write_registers(REG_OCP_CONFIG, &ocp_setting2, 1);*/
 	/*printf("0x%02X\n", statusWrite);*/
-
-	/*uint8_t ocp_setting;*/
-	/*read_registers(REG_OCP_CONFIG, &ocp_setting, 1);*/
-	/*printf("0x%02X\n", ocp_setting);*/
-
 	/*uint8_t ocp_setting3;*/
 	/*read_registers(REG_OCP_CONFIG, &ocp_setting3, 1);*/
 	/*printf("0x%02X\n", ocp_setting3);*/
@@ -271,6 +282,7 @@ void tx_mode_attempt(uint8_t* data, uint16_t len) {
 void set_standby_mode(){
 	//0 for RC
 	//1 for XOCX
+	ant_sw_off();
 	sendCommand(spi_handle, SET_STANDBY_OP, 0, 1); //step 1, standby rc
 }
 void set_packet_type(uint8_t packet_type){
@@ -330,9 +342,10 @@ void set_tx_params(int8_t power, uint8_t ramp_time){
 	uint8_t ocp_setting = OCP_SX1262_140_MA;
 	write_registers(REG_OCP_CONFIG, &ocp_setting, 1); //whhy &
 
-	uint8_t reg_reading;
-	read_registers(REG_OCP_CONFIG, &reg_reading, 1);
-	printf("0x%02X\n", reg_reading);
+	/*wait_on_busy();*/
+	/*uint8_t reg_reading;*/
+	/*read_registers(REG_OCP_CONFIG, &reg_reading, 1);*/
+	/*printf("0x%02X\n", reg_reading);*/
 
 	if (ramp_time > SET_RAMP_3400U) {
 		ramp_time = SET_RAMP_3400U;
@@ -407,7 +420,7 @@ void set_dio_irq_params(uint16_t irq_mask, uint16_t dio1_mask, uint16_t dio2_mas
 
 void set_tx_mode(uint32_t timeout) {
 	//setting to zero is one shot mode, will return to STBY_RC mode afterward
-
+	ant_sw_on();
 	uint8_t timeout_buff[3];
     timeout_buff[0] = (uint8_t) (timeout >> 16) & 0xFF;
     timeout_buff[1] = (uint8_t) (timeout >> 8) & 0xFF;
@@ -584,3 +597,13 @@ void factoryReset(){
 	wait_on_busy();
 
 }
+
+void ant_sw_on(){
+	int ant_sw = lgGpioWrite(chip_handle, ANT_SW, HIGH);
+}
+
+void ant_sw_off() {
+	int ant_sw = lgGpioWrite(chip_handle, ANT_SW, LOW);
+}
+
+
