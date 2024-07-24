@@ -68,56 +68,32 @@ int main() {
 	set_regulator_mode();
 	print_status_information();
 	set_standby_mode(); //into standby rc
-	/*uint8_t data_buffer[100] = {1,2,3,4,5,6,7,8,9,10,*/
-/*1,2,3,4,5,6,7,8,9,10,*/
-/*1,2,3,4,5,6,7,8,9,10,*/
-/*1,2,3,4,5,6,7,8,9,10,*/
-/*1,2,3,4,5,6,7,8,9,10,*/
-/*1,2,3,4,5,6,7,8,9,10,*/
-/*1,2,3,4,5,6,7,8,9,10,*/
-/*1,2,3,4,5,6,7,8,9,10,*/
+						//
 
-/*1,2,3,4,5,6,7,8,9,10,*/
+	uint8_t data_buffer[100] = {1,2,3,4,5,6,7,8,9,10,
+1,2,3,4,5,6,7,8,9,10,
+1,2,3,4,5,6,7,8,9,10,
+1,2,3,4,5,6,7,8,9,10,
+1,2,3,4,5,6,7,8,9,10,
+1,2,3,4,5,6,7,8,9,10,
+1,2,3,4,5,6,7,8,9,10,
+1,2,3,4,5,6,7,8,9,10,
 
-/*1,2,3,4,5,6,7,8,9,10};*/
+1,2,3,4,5,6,7,8,9,10,
 
-	/*tx_mode_attempt(data_buffer, 100);	*/
-	//chip init
+1,2,3,4,5,6,7,8,9,10};
 
-	/*wait_on_busy();*/
-	/*print_status_information();*/
-	/*print_device_errors(); //will raise XOSC errors on startup, just clear device errors? data sheet page 82*/
-	/*clear_device_errors();*/
-
-	/*set_regulator_mode(); //LDO mode*/
-	/*wait_on_busy();*/
-	/*print_status_information();*/
-	/*print_device_errors();*/
-	/*//testing reading and writing registers*/
-
-	/*wait_on_busy();*/
-	/*uint8_t tx_clamp_config_val;*/
-	/*read_registers(REG_TX_CLAMP_CONFIG, &tx_clamp_config_val, 1);*/
-	/*printf("0x%02X\n", tx_clamp_config_val);*/
+	tx_mode_attempt(data_buffer, 100);	
 	uint16_t irq_status = get_irq_status(); 
 	printf("%d", irq_status);
 
-	rx_mode_attempt();
+	/*rx_mode_attempt();*/
 	
 
 	uint8_t ocp_setting;
 	read_registers(REG_OCP_CONFIG, &ocp_setting, 1);
 	printf("0x%02X\n", ocp_setting);
 
-	/*uint8_t ocp_setting2 = OCP_SX1262_140_MA;*/
-	/*uint8_t statusWrite = write_registers(REG_OCP_CONFIG, &ocp_setting2, 1);*/
-	/*printf("0x%02X\n", statusWrite);*/
-	/*uint8_t ocp_setting3;*/
-	/*read_registers(REG_OCP_CONFIG, &ocp_setting3, 1);*/
-	/*printf("0x%02X\n", ocp_setting3);*/
-
-	/*uint8_t data_buffer[3] = {1,2,3};*/
-	/*tx_mode_attempt(data_buffer, 3);	*/
 	int closeStatus = lgSpiClose(spi_handle);
     if (closeStatus < 0) {
         printf("Failed to close SPI device: error code %d\n", closeStatus);
@@ -269,7 +245,7 @@ void tx_mode_attempt(uint8_t* data, uint16_t len) {
 	write_buffer(0x00, data, len);
 	puts("6");
 
-	config_modulation_params(LORA_SF_7, LORA_BW_500, LORA_CR_4_5, 0) ;
+	config_modulation_params(LORA_SF_12, LORA_BW_500, LORA_CR_4_5, 0) ;
 	puts("7");
 	print_status_information();
 	config_packet_params(12, PKT_EXPLICIT_HDR, len, PKT_CRC_OFF, STD_IQ_SETUP);
@@ -282,7 +258,9 @@ void tx_mode_attempt(uint8_t* data, uint16_t len) {
 	set_tx_mode(0x00); 
 	puts("10");
 
-	 
+	get_irq_status();
+	puts("tx DIO1 pin go high?");
+
 	wait_on_TX_IRQ();
 	clear_tx_irq();
 
@@ -294,11 +272,11 @@ void rx_mode_attempt(){
 	int len = 100;
 
 	set_standby_mode();
-
+	print_status_information();
 	set_packet_type(LORA_PKT_TYPE);
 	set_rf_frequency(915000000);
 	set_buffer_base_addr(0x00, 0x00);
-	config_modulation_params(LORA_SF_7, LORA_BW_500, LORA_CR_4_5, 0) ;
+	config_modulation_params(LORA_SF_12, LORA_BW_500, LORA_CR_4_5, 0) ;
 	config_packet_params(12, PKT_EXPLICIT_HDR, len, PKT_CRC_OFF, STD_IQ_SETUP);
 		uint8_t reg_iq_pol;
         read_registers(REG_IQ_POL_SETUP, &reg_iq_pol, 1);
@@ -308,8 +286,11 @@ void rx_mode_attempt(){
 
 	set_dio_irq_params(0xFFFF, RX_DONE_MASK, 0x0000, 0x0000); //sets dio1 as tx
 	set_rx_mode(0xFFFFFF); //continous mode
+						   //
+	wait_on_busy();
 	print_status_information();	   
-	wait_on_RX_IRQ();
+	SLEEP_MS(10000);
+	print_status_information();	   
 	
 	//should clear irq
 	uint8_t payload_len = 0;
@@ -317,6 +298,8 @@ void rx_mode_attempt(){
 	uint8_t rx_pkt[256];
 
 	get_rx_buffer_status(&payload_len, &rx_buff_st_addr);
+	printf("payload len  ");
+	printf("%d\n", payload_len);
 	read_buffer(rx_buff_st_addr, rx_pkt, payload_len);
 
 	for(int i = 0; i < payload_len; i++)
@@ -329,9 +312,14 @@ void rx_mode_attempt(){
 void set_rx_mode(uint32_t timeout) {
 
 	ant_sw_on();
+
+	SLEEP_MS(100);
 	uint8_t rx_gain = RX_GAIN_PWR_SAVING;
 	write_registers(REG_RX_GAIN, &rx_gain, 1);
-
+	wait_on_busy();
+	uint8_t readRegVal;
+	read_registers(REG_RX_GAIN, &readRegVal, 1);
+	printf("0x%02X\n", readRegVal);
 	uint8_t timeout_buff[3];
 	timeout_buff[0] = (uint8_t) (timeout >> 16) & 0xFF;
     timeout_buff[1] = (uint8_t) (timeout >> 8) & 0xFF;
@@ -342,24 +330,13 @@ void set_rx_mode(uint32_t timeout) {
 }
 
 
-void wait_on_RX_IRQ(){
-
-	int txStatus= lgGpioRead(chip_handle, RX_PIN); //wait until goes high
-	while (txStatus == LOW) {
-		puts("still low");
-		uint16_t irq_stats = get_irq_status();
-		printf("%d\n", irq_stats);
-		SLEEP_MS(1);
-	}
-	puts("tx done!");
-
-}
 //tx functions
 void set_standby_mode(){
 	//0 for RC
 	//1 for XOCX
 	ant_sw_off();
 	sendCommand(spi_handle, SET_STANDBY_OP, 0, 1); //step 1, standby rc
+	wait_on_busy();
 }
 void set_packet_type(uint8_t packet_type){
 	if(packet_type == LORA_PKT_TYPE ||
@@ -524,6 +501,8 @@ void set_tx_mode(uint32_t timeout) {
 
 	sendCommand(spi_handle, SET_TX_MODE_OP, timeout_buff, 3);
 	/*print_status_information();*/
+
+	wait_on_busy();
 }
 
 void wait_on_TX_IRQ(void) {
@@ -533,9 +512,23 @@ void wait_on_TX_IRQ(void) {
 	int txStatus= lgGpioRead(chip_handle, TX_PIN); 
 	while (txStatus == LOW) {
 		puts("still low");
-		SLEEP_MS(1);
+		uint16_t irq_stats = get_irq_status();
+		printf("%d\n", irq_stats);
+		SLEEP_MS(1000);
 	}
 	puts("tx done!");
+}
+void wait_on_RX_IRQ(){
+
+	int txStatus= lgGpioRead(chip_handle, RX_PIN); //wait until goes high
+	while (txStatus == LOW) {
+		puts("still low");
+		uint16_t irq_stats = get_irq_status();
+		printf("%d\n", irq_stats);
+		SLEEP_MS(1000);
+	}
+	puts("rx done!");
+
 }
 
 void get_rx_buffer_status(uint8_t* payload_len, uint8_t* rx_start_buff_addr) {
