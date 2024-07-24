@@ -68,8 +68,20 @@ int main() {
 	set_regulator_mode();
 	print_status_information();
 	set_standby_mode(); //into standby rc
-	uint8_t data_buffer[3] = {1,2,3};
-	tx_mode_attempt(data_buffer, 3);	
+	/*uint8_t data_buffer[100] = {1,2,3,4,5,6,7,8,9,10,*/
+/*1,2,3,4,5,6,7,8,9,10,*/
+/*1,2,3,4,5,6,7,8,9,10,*/
+/*1,2,3,4,5,6,7,8,9,10,*/
+/*1,2,3,4,5,6,7,8,9,10,*/
+/*1,2,3,4,5,6,7,8,9,10,*/
+/*1,2,3,4,5,6,7,8,9,10,*/
+/*1,2,3,4,5,6,7,8,9,10,*/
+
+/*1,2,3,4,5,6,7,8,9,10,*/
+
+/*1,2,3,4,5,6,7,8,9,10};*/
+
+	/*tx_mode_attempt(data_buffer, 100);	*/
 	//chip init
 
 	/*wait_on_busy();*/
@@ -87,8 +99,10 @@ int main() {
 	/*uint8_t tx_clamp_config_val;*/
 	/*read_registers(REG_TX_CLAMP_CONFIG, &tx_clamp_config_val, 1);*/
 	/*printf("0x%02X\n", tx_clamp_config_val);*/
-   
+	uint16_t irq_status = get_irq_status(); 
+	printf("%d", irq_status);
 
+	rx_mode_attempt();
 	
 
 	uint8_t ocp_setting;
@@ -150,7 +164,7 @@ void wait_on_busy(void){
 	
 	int busyStatus= lgGpioRead(chip_handle, BUSY_PIN); 
 	while (busyStatus == HIGH) {
-		SLEEP_MS(1);
+		SLEEP_MS(1000);
 	}
 }
 
@@ -168,7 +182,11 @@ void clear_tx_irq(){
 	/*tx_irq_status &= ~TX_DONE_MASK;*/
 
 	/*write_registers(CLEAR_IRQ_STATUS_OP, (uint8_t *)tx_irq_status, 1);*/
-}	
+}
+
+void clear_rx_irq() {
+	sendCommand(spi_handle, CLEAR_IRQ_STATUS_OP, (uint8_t*) 1, 1);
+}
 uint16_t get_irq_status() {
 	uint8_t irq_buff[2];
 	uint16_t result;
@@ -272,12 +290,70 @@ void tx_mode_attempt(uint8_t* data, uint16_t len) {
 	print_status_information();
 }
 
+void rx_mode_attempt(){
+	int len = 100;
+
+	set_standby_mode();
+
+	set_packet_type(LORA_PKT_TYPE);
+	set_rf_frequency(915000000);
+	set_buffer_base_addr(0x00, 0x00);
+	config_modulation_params(LORA_SF_7, LORA_BW_500, LORA_CR_4_5, 0) ;
+	config_packet_params(12, PKT_EXPLICIT_HDR, len, PKT_CRC_OFF, STD_IQ_SETUP);
+		uint8_t reg_iq_pol;
+        read_registers(REG_IQ_POL_SETUP, &reg_iq_pol, 1);
+        reg_iq_pol |= 0x04;
+        write_registers(REG_IQ_POL_SETUP, &reg_iq_pol, 1);
 
 
+	set_dio_irq_params(0xFFFF, RX_DONE_MASK, 0x0000, 0x0000); //sets dio1 as tx
+	set_rx_mode(0xFFFFFF); //continous mode
+	print_status_information();	   
+	wait_on_RX_IRQ();
+	
+	//should clear irq
+	uint8_t payload_len = 0;
+	uint8_t rx_buff_st_addr = 0;
+	uint8_t rx_pkt[256];
+
+	get_rx_buffer_status(&payload_len, &rx_buff_st_addr);
+	read_buffer(rx_buff_st_addr, rx_pkt, payload_len);
+
+	for(int i = 0; i < payload_len; i++)
+    {
+        printf("%c", rx_pkt[i]);
+    }
+
+}
+
+void set_rx_mode(uint32_t timeout) {
+
+	ant_sw_on();
+	uint8_t rx_gain = RX_GAIN_PWR_SAVING;
+	write_registers(REG_RX_GAIN, &rx_gain, 1);
+
+	uint8_t timeout_buff[3];
+	timeout_buff[0] = (uint8_t) (timeout >> 16) & 0xFF;
+    timeout_buff[1] = (uint8_t) (timeout >> 8) & 0xFF;
+    timeout_buff[2] = (uint8_t) timeout & 0xFF;
+
+	sendCommand(spi_handle, SET_RX_MODE_OP, timeout_buff, 3);
+
+}
 
 
+void wait_on_RX_IRQ(){
 
+	int txStatus= lgGpioRead(chip_handle, RX_PIN); //wait until goes high
+	while (txStatus == LOW) {
+		puts("still low");
+		uint16_t irq_stats = get_irq_status();
+		printf("%d\n", irq_stats);
+		SLEEP_MS(1);
+	}
+	puts("tx done!");
 
+}
 //tx functions
 void set_standby_mode(){
 	//0 for RC
@@ -363,14 +439,34 @@ uint8_t write_buffer(uint8_t offset, uint8_t* data, uint16_t len){
 	uint8_t status;
 	uint8_t cmd_offset[2] = {WRITE_BUF_OP, offset};
 
+	nss_select();
 	int spiWrite = lgSpiWrite(spi_handle, (const char *) cmd_offset, 2);
 	int spiWrite2 = lgSpiWrite(spi_handle, (const char *) data, len - 1);
 	int spiReadWrite = lgSpiXfer(spi_handle, (const char *) data + (len +1 ), (char *) &status, 1);
 
+	nss_deselect();
 	wait_on_busy();
 
 	return status;
 }
+uint8_t read_buffer(uint8_t offset, uint8_t* data, uint16_t len){
+
+	uint8_t status;
+	uint8_t cmd_offset[2] = {READ_BUF_OP, offset};
+
+	nss_select();
+	int spiWrite = lgSpiWrite(spi_handle, (const char *) cmd_offset, 2);
+	int spiReadWrite = lgSpiXfer(spi_handle, (const char *)NO_OPERATION, (char *)&status, 1);
+	int read = lgSpiRead(spi_handle, (char *)(data), len);
+
+	nss_select();
+	
+	wait_on_busy();
+	return status;
+}
+
+
+
 
 void config_modulation_params(uint8_t spreading_factor, uint8_t bandwidth, uint8_t coding_rate, uint8_t low_data_rate_opt){
 
@@ -434,12 +530,22 @@ void wait_on_TX_IRQ(void) {
 
 	//waits for TX IRQ to go low, means tx done and clears IRQ flag
 	
-	int txStatus= lgGpioRead(chip_handle, BUSY_PIN); 
-	while (txStatus == HIGH) {
-		puts("still high");
+	int txStatus= lgGpioRead(chip_handle, TX_PIN); 
+	while (txStatus == LOW) {
+		puts("still low");
 		SLEEP_MS(1);
 	}
 	puts("tx done!");
+}
+
+void get_rx_buffer_status(uint8_t* payload_len, uint8_t* rx_start_buff_addr) {
+
+	uint8_t rx_status[2];
+
+	getCommand(spi_handle, GET_RX_BUFF_STATUS_OP, rx_status, 2);
+
+	*payload_len = rx_status[0];
+	*rx_start_buff_addr = rx_status[1];
 }
 
 void sendCommand(int spi_hanlde, uint8_t opcode, uint8_t* data, uint8_t len){
@@ -466,7 +572,7 @@ void send_packet(uint8_t* data, uint16_t data_len) {
 	set_buffer_base_addr(0x00, 0x00); //does this order matter
 	write_buffer(0x00, data, data_len);
 
-	set_dio_irq_params(0xFFFF, TX_DONE_MASK, 0x0000, 0x0000); //setup tx done irq
+	set_dio_irq_params(0xFFFF, TX_DONE_MASK, 0x0000, RX_DONE_MASK); //setup tx done irq
 	set_tx_mode(0x00);
 
 	wait_on_TX_IRQ();

@@ -8,7 +8,7 @@
 #define TX_PIN 6
 #define CS_PIN 5
 #define ANT_SW 25
-
+#define RX_PIN 24
 #define LOW 0
 #define HIGH 1
 
@@ -70,9 +70,15 @@ void wait_on_TX_IRQ(void);
 void tx_mode(void);
 void nss_select(void);
 void nss_deselect(void);
-
+void set_rx_mode(uint32_t);
+void rx_mode_attempt();
 void ant_sw_on();
 void ant_sw_off();
+void wait_on_RX_IRQ();
+void get_rx_buffer_status(uint8_t* payload_len, uint8_t* rx_start_buff_addr);
+uint8_t read_buffer(uint8_t offset, uint8_t*data, uint16_t len);
+
+
 #endif
 
 

@@ -35,6 +35,9 @@ void gpio_init(int chip_handle){
 	int txIRQ = lgGpioClaimInput(chip_handle, 0, 6); //gpio 6 input
 	(txIRQ >= 0) ? puts("tx init") : puts("tx fail");	
 
+	int rxIRQ = lgGpioClaimInput(chip_handle, 0, RX_PIN);
+	(rxIRQ >= 0) ? puts("lx init") : puts("rx fail");	
+	
 	int ant_sw = lgGpioClaimOutput(chip_handle, 0, ANT_SW, LOW);
 	(ant_sw >= 0) ? puts("ANT SW init") : puts("ant sw fail");
 }
