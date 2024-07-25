@@ -29,13 +29,13 @@ void gpio_init(int chip_handle){
 	int sx_nreset =  lgGpioClaimOutput(chip_handle,0, SX_NRESET_PIN, HIGH); //init high
 	(sx_nreset >= 0 ) ? puts("sx_nreset init") : puts("sx_nreset fail");
 
-	int busy = lgGpioClaimInput(chip_handle, 0, BUSY); //GPIO 16 input
+	int busy = lgGpioClaimInput(chip_handle, LG_SET_PULL_DOWN, BUSY); //GPIO 16 input
 	(busy >= 0) ? puts("busy init") : puts("busy fail");
 
 	int txIRQ = lgGpioClaimInput(chip_handle, LG_SET_PULL_DOWN, TX_PIN); //gpio 6 input
 	(txIRQ >= 0) ? puts("tx init") : puts("tx fail");	
 
-	int rxIRQ = lgGpioClaimInput(chip_handle, 0, RX_PIN);
+	int rxIRQ = lgGpioClaimInput(chip_handle, LG_SET_PULL_DOWN, RX_PIN);
 	(rxIRQ >= 0) ? puts("rx init") : puts("rx fail");	
 	
 	int ant_sw = lgGpioClaimOutput(chip_handle, 0, ANT_SW, LOW);
