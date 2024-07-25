@@ -164,11 +164,12 @@ void clear_rx_irq() {
 	sendCommand(spi_handle, CLEAR_IRQ_STATUS_OP, (uint8_t*) 1, 1);
 }
 uint16_t get_irq_status() {
-	uint8_t irq_buff[2];
+	uint8_t irq_buff[4];
 	uint16_t result;
 
-	getCommand(spi_handle, GET_IRQ_STATUS_OP, irq_buff, 2);
-	result = ((irq_buff[0] & 0x0003) << 8) & (irq_buff[1] & 0x00FF);
+	getCommand(spi_handle, GET_IRQ_STATUS_OP, irq_buff, 4);
+	  result = (irq_buff[2] << 8) | irq_buff[3];
+	/*result = ((irq_buff[0] & 0x0003) << 8) & (irq_buff[1] & 0x00FF);*/
 	//only care about the last 2 bits, then shift them to the right
 	//only care about last 8 bits? combine tham
 	//why what is going on, this tells status on all irq, there are only 10
@@ -301,7 +302,7 @@ void rx_mode_attempt(){
     {
         printf("%c", rx_pkt[i]);
     }
-
+	printf("\n");
 }
 
 void set_rx_mode(uint32_t timeout) {
