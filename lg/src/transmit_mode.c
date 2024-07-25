@@ -70,24 +70,24 @@ int main() {
 	set_standby_mode(); //into standby rc
 						//
 
-	uint8_t data_buffer[100] = {1,2,3,4,5,6,7,8,9,10,
-1,2,3,4,5,6,7,8,9,10,
-1,2,3,4,5,6,7,8,9,10,
-1,2,3,4,5,6,7,8,9,10,
-1,2,3,4,5,6,7,8,9,10,
-1,2,3,4,5,6,7,8,9,10,
-1,2,3,4,5,6,7,8,9,10,
-1,2,3,4,5,6,7,8,9,10,
+	/*uint8_t data_buffer[100] = {1,2,3,4,5,6,7,8,9,10,*/
+/*1,2,3,4,5,6,7,8,9,10,*/
+/*1,2,3,4,5,6,7,8,9,10,*/
+/*1,2,3,4,5,6,7,8,9,10,*/
+/*1,2,3,4,5,6,7,8,9,10,*/
+/*1,2,3,4,5,6,7,8,9,10,*/
+/*1,2,3,4,5,6,7,8,9,10,*/
+/*1,2,3,4,5,6,7,8,9,10,*/
 
-1,2,3,4,5,6,7,8,9,10,
+/*1,2,3,4,5,6,7,8,9,10,*/
 
-1,2,3,4,5,6,7,8,9,10};
+/*1,2,3,4,5,6,7,8,9,10};*/
 
-	tx_mode_attempt(data_buffer, 100);	
+	/*tx_mode_attempt(data_buffer, 100);	*/
 	uint16_t irq_status = get_irq_status(); 
 	printf("%d", irq_status);
 
-	/*rx_mode_attempt();*/
+	rx_mode_attempt();
 	
 
 	uint8_t ocp_setting;
@@ -278,18 +278,13 @@ void rx_mode_attempt(){
 	set_buffer_base_addr(0x00, 0x00);
 	config_modulation_params(LORA_SF_12, LORA_BW_500, LORA_CR_4_5, 0) ;
 	config_packet_params(12, PKT_EXPLICIT_HDR, len, PKT_CRC_OFF, STD_IQ_SETUP);
-		uint8_t reg_iq_pol;
-        read_registers(REG_IQ_POL_SETUP, &reg_iq_pol, 1);
-        reg_iq_pol |= 0x04;
-        write_registers(REG_IQ_POL_SETUP, &reg_iq_pol, 1);
 
-
-	set_dio_irq_params(0xFFFF, RX_DONE_MASK, 0x0000, 0x0000); //sets dio1 as tx
-	set_rx_mode(0xFFFFFF); //continous mode
+	set_dio_irq_params(0x03FF, PREAMBLE_DETECTED_MASK, 0x0000, 0x0000); //sets dio1 as tx
+	set_rx_mode(0x000000); //continous mode
 						   //
 	wait_on_busy();
 	print_status_information();	   
-	SLEEP_MS(10000);
+	wait_on_RX_IRQ();
 	print_status_information();	   
 	
 	//should clear irq
@@ -521,11 +516,12 @@ void wait_on_TX_IRQ(void) {
 }
 void wait_on_RX_IRQ(){
 
-	int txStatus= lgGpioRead(chip_handle, RX_PIN); //wait until goes high
-	while (txStatus == LOW) {
+	int rxStatus= lgGpioRead(chip_handle, TX_PIN); //wait until goes high
+	while (rxStatus == LOW) {
 		puts("still low");
 		uint16_t irq_stats = get_irq_status();
 		printf("%d\n", irq_stats);
+		rxStatus= lgGpioRead(chip_handle, TX_PIN); //wait until goes high
 		SLEEP_MS(1000);
 	}
 	puts("rx done!");
