@@ -5,10 +5,12 @@
 
 #define BUSY_PIN 16 //J1 Header, pin 4
 #define SX_NRESET_PIN 26 //J4 Header, pin 1
-#define DIO_PIN 6 
-#define CS_PIN 5
-#define ANT_SW 25
-#define RX_PIN 24
+#define DIO_PIN 6 //using for tx and rx done 
+				  //J1 pin 6
+#define CS_PIN 5 //J1 pin 8
+#define ANT_SW 25 //J2 pin 1
+
+
 #define LOW 0
 #define HIGH 1
 

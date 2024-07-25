@@ -38,13 +38,6 @@
 
 
 // Function prototypes
-int lgpio_init(void);
-void gpio_init(int chip_handle);
-int spiHandle(int spiDev, int spiChannel, int spiBaud, int spiFlag);
-void printBuffer(const char *buffer, int len);
-int getStatus(int spi_handle, char opcode, char *response, int response_len);
-void wait_on_busy(void);
-/*void tx_mode_attempt(uint8_t* data, uint16_t len);*/
 int chip_handle = 0;
 int spi_handle = 0;
 int main() {
