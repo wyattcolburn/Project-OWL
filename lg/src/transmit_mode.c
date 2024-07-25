@@ -252,7 +252,7 @@ void tx_mode_attempt(uint8_t* data, uint16_t len) {
 	puts("8");
 	print_status_information();
 	
-	set_dio_irq_params(0xFFFF,TX_DONE_MASK, 0x0000, 0x0000); //sets dio1 as tx
+	set_dio_irq_params(0x03FF, TX_DONE_MASK, 0x0000, 0x0000); //sets dio1 as tx
 	puts("9");
 	print_status_information();
 	set_tx_mode(0x00); 
@@ -515,6 +515,7 @@ void wait_on_TX_IRQ(void) {
 		uint16_t irq_stats = get_irq_status();
 		printf("%d\n", irq_stats);
 		SLEEP_MS(1000);
+		txStatus= lgGpioRead(chip_handle, TX_PIN); 
 	}
 	puts("tx done!");
 }
