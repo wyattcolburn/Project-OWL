@@ -63,36 +63,38 @@ int main() {
 	
 	factoryReset();
 	wait_on_busy(); //so waiting for standby mode
-	print_status_information();
+	
+	get_irq_status();
+	/*print_status_information();*/
 
-	set_regulator_mode();
-	print_status_information();
-	set_standby_mode(); //into standby rc
-						//
+	/*set_regulator_mode();*/
+	/*print_status_information();*/
+	/*set_standby_mode(); //into standby rc*/
+						
 
-	/*uint8_t data_buffer[100] = {1,2,3,4,5,6,7,8,9,10,*/
-/*1,2,3,4,5,6,7,8,9,10,*/
-/*1,2,3,4,5,6,7,8,9,10,*/
-/*1,2,3,4,5,6,7,8,9,10,*/
-/*1,2,3,4,5,6,7,8,9,10,*/
-/*1,2,3,4,5,6,7,8,9,10,*/
-/*1,2,3,4,5,6,7,8,9,10,*/
-/*1,2,3,4,5,6,7,8,9,10,*/
+	uint8_t data_buffer[100] = {1,2,3,4,5,6,7,8,9,10,
+1,2,3,4,5,6,7,8,9,10,
+1,2,3,4,5,6,7,8,9,10,
+1,2,3,4,5,6,7,8,9,10,
+1,2,3,4,5,6,7,8,9,10,
+1,2,3,4,5,6,7,8,9,10,
+1,2,3,4,5,6,7,8,9,10,
+1,2,3,4,5,6,7,8,9,10,
 
-/*1,2,3,4,5,6,7,8,9,10,*/
+1,2,3,4,5,6,7,8,9,10,
 
-/*1,2,3,4,5,6,7,8,9,10};*/
+1,2,3,4,5,6,7,8,9,10};
 
-	/*tx_mode_attempt(data_buffer, 100);	*/
-	uint16_t irq_status = get_irq_status(); 
-	printf("%d", irq_status);
+	tx_mode_attempt(data_buffer, 100);	
+	/*uint16_t irq_status = get_irq_status(); */
+	/*printf("%d", irq_status);*/
 
-	rx_mode_attempt();
+	//rx_mode_attempt();
 	
 
-	uint8_t ocp_setting;
-	read_registers(REG_OCP_CONFIG, &ocp_setting, 1);
-	printf("0x%02X\n", ocp_setting);
+	/*uint8_t ocp_setting;*/
+	/*read_registers(REG_OCP_CONFIG, &ocp_setting, 1);*/
+	/*printf("0x%02X\n", ocp_setting);*/
 
 	int closeStatus = lgSpiClose(spi_handle);
     if (closeStatus < 0) {
@@ -164,11 +166,13 @@ void clear_rx_irq() {
 	sendCommand(spi_handle, CLEAR_IRQ_STATUS_OP, (uint8_t*) 1, 1);
 }
 uint16_t get_irq_status() {
+
+	//this function needs work
 	uint8_t irq_buff[4];
 	uint16_t result;
 
 	getCommand(spi_handle, GET_IRQ_STATUS_OP, irq_buff, 4);
-	  result = (irq_buff[2] << 8) | irq_buff[3];
+	  result = ((irq_buff[2] & 0x0003) <<8) & (irq_buff[3] &0x00FF);
 	/*result = ((irq_buff[0] & 0x0003) << 8) & (irq_buff[1] & 0x00FF);*/
 	//only care about the last 2 bits, then shift them to the right
 	//only care about last 8 bits? combine tham
@@ -262,7 +266,7 @@ void tx_mode_attempt(uint8_t* data, uint16_t len) {
 	get_irq_status();
 	puts("tx DIO1 pin go high?");
 
-	wait_on_TX_IRQ();
+	wait_on_DIO_IRQ();
 	clear_tx_irq();
 
 	puts("transmission success"); //should go back into standby mode, can we check
@@ -285,7 +289,7 @@ void rx_mode_attempt(){
 						   //
 	wait_on_busy();
 	print_status_information();	   
-	wait_on_RX_IRQ();
+	wait_on_DIO_IRQ();
 	print_status_information();	   
 	
 	//should clear irq
@@ -500,33 +504,17 @@ void set_tx_mode(uint32_t timeout) {
 
 	wait_on_busy();
 }
+void wait_on_DIO_IRQ(void){
 
-void wait_on_TX_IRQ(void) {
-
-	//waits for TX IRQ to go low, means tx done and clears IRQ flag
-	
-	int txStatus= lgGpioRead(chip_handle, TX_PIN); 
-	while (txStatus == LOW) {
+	int dioStatus= lgGpioRead(chip_handle, DIO_PIN); 
+	while (dioStatus == LOW) {
 		puts("still low");
 		uint16_t irq_stats = get_irq_status();
 		printf("%d\n", irq_stats);
 		SLEEP_MS(1000);
-		txStatus= lgGpioRead(chip_handle, TX_PIN); 
+		dioStatus= lgGpioRead(chip_handle, DIO_PIN); 
 	}
-	puts("tx done!");
-}
-void wait_on_RX_IRQ(){
-
-	int rxStatus= lgGpioRead(chip_handle, TX_PIN); //wait until goes high
-	while (rxStatus == LOW) {
-		puts("still low");
-		uint16_t irq_stats = get_irq_status();
-		printf("%d\n", irq_stats);
-		rxStatus= lgGpioRead(chip_handle, TX_PIN); //wait until goes high
-		SLEEP_MS(1000);
-	}
-	puts("rx done!");
-
+	puts("dio done!");
 }
 
 void get_rx_buffer_status(uint8_t* payload_len, uint8_t* rx_start_buff_addr) {
@@ -547,14 +535,16 @@ void sendCommand(int spi_hanlde, uint8_t opcode, uint8_t* data, uint8_t len){
 
 	if (len > 0) {
 		int writeData = lgSpiWrite(spi_handle, (const char *) data, len);
-	}
+	
 
-	nss_deselect();
+		nss_deselect();
 
-	SLEEP_MS(1);
+		SLEEP_MS(1);
 
-	if (opcode != SET_SLEEP_OP){
-		wait_on_busy();
+		if (opcode != SET_SLEEP_OP){
+			wait_on_busy();
+		}
+	
 	}
 }
 
@@ -566,7 +556,7 @@ void send_packet(uint8_t* data, uint16_t data_len) {
 	set_dio_irq_params(0xFFFF, TX_DONE_MASK, 0x0000, RX_DONE_MASK); //setup tx done irq
 	set_tx_mode(0x00);
 
-	wait_on_TX_IRQ();
+	wait_on_DIO_IRQ();
 
 	//need to clear IRQ
 

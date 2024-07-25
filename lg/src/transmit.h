@@ -3,9 +3,9 @@
 #ifndef spi_loopback_h
 #define spi_loopback_h
 
-#define BUSY_PIN 16
-#define SX_NRESET_PIN 26
-#define TX_PIN 6
+#define BUSY_PIN 16 //J1 Header, pin 4
+#define SX_NRESET_PIN 26 //J4 Header, pin 1
+#define DIO_PIN 6 
 #define CS_PIN 5
 #define ANT_SW 25
 #define RX_PIN 24
@@ -54,7 +54,7 @@ void set_dio_irq_params(uint16_t irq_mask, uint16_t dio1_mask, uint16_t dio2_mas
 void tx_mode_attempt(uint8_t* data, uint16_t);
 
 void clear_tx_irq();
-
+void wait_on_DIO_IRQ();
 uint16_t get_irq_status();
 
 void clear_irq_status(uint16_t status_mask);
