@@ -82,10 +82,10 @@ int main() {
 1,2,3,4,5,6,7,8,9,10};
 
 	char small_data_buff[9] = "whatever";
-	tx_mode_attempt((uint8_t*)small_data_buff, 9);
+	/*tx_mode_attempt((uint8_t*)small_data_buff, 9);*/
 	
 	/*SLEEP_MS(1000);*/
-	/*send_packet(data_buffer, 100);*/
+	send_packet(small_data_buff, 9);
 	/*uint16_t irq_status = get_irq_status(); */
 	/*printf("%d", irq_status);*/
 
@@ -284,9 +284,9 @@ void tx_config(uint16_t payload_len){
 	set_standby_mode();
 	set_packet_type(LORA_PKT_TYPE);
 	set_rf_frequency(RF_FREQ);
-	config_modulation_params(LORA_SF_12, LORA_BW_500, LORA_CR_4_5, 0);
-	config_packet_params(12, PKT_EXPLICIT_HDR, payload_len, PKT_CRC_OFF, STD_IQ_SETUP);
 	set_tx_params(0, SET_RAMP_3400U);
+	config_modulation_params(LORA_SF_12, LORA_BW_250, LORA_CR_4_5, 0);
+	config_packet_params(12, PKT_EXPLICIT_HDR, payload_len, PKT_CRC_OFF, STD_IQ_SETUP);
 
 
 }
