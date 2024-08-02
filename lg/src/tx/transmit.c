@@ -60,28 +60,13 @@ int main() {
 	factoryReset();
 	wait_on_busy(); //so waiting for standby mode
 	
-	/*uint8_t data_buffer[100] = {1,2,3,4,5,6,7,8,9,10,*/
-/*1,2,3,4,5,6,7,8,9,10,*/
-/*1,2,3,4,5,6,7,8,9,10,*/
-/*1,2,3,4,5,6,7,8,9,10,*/
-/*1,2,3,4,5,6,7,8,9,10,*/
-/*1,2,3,4,5,6,7,8,9,10,*/
-/*1,2,3,4,5,6,7,8,9,10,*/
-/*1,2,3,4,5,6,7,8,9,10,*/
 
-/*1,2,3,4,5,6,7,8,9,10,*/
 
-/*1,2,3,4,5,6,7,8,9,10};*/
-
-	/*char small_data_buff[9] = "hihoware";*/
+	//only two things need to change code are what tx buff and message len
+	char tx_buff[9] = "hihoware";
 		
-	/*send_packet(small_data_buff, 9);*/
+	send_packet((uint8_t *)tx_buff, 9); //dont forget to change len here
 
-	char messageBuffer[255];
-	int messageLen = 0;
-	messageLen = enterMessage(messageBuffer);
-	printf("%d", messageLen);
-	send_packet((uint8_t*)messageBuffer, (messageLen + 1));
 
 	int closeStatus = lgSpiClose(spi_handle);
     if (closeStatus < 0) {
