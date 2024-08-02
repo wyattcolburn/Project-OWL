@@ -4,7 +4,7 @@
 #include "transmit.h"
 #include "sx1262x_defs_custom.h"
 #include "helpFunctions.h"
-
+#include "string.h"
 #define GET_STATUS_OP                   UINT8_C(0xC0)
 #define GET_STATS_OP                    UINT8_C(0x10)
 #define GET_RST_STATS_OP                UINT8_C(0x00)
@@ -35,7 +35,7 @@
 	/*VCC (XTAL) 4 -> Pin 1*/
 	/*A5 5*/
 	/*A6 6*/
-
+int enterMessage(char *messageBuffer);
 
 // Function prototypes
 int chip_handle = 0;
@@ -60,41 +60,28 @@ int main() {
 	factoryReset();
 	wait_on_busy(); //so waiting for standby mode
 	
-	get_irq_status();
-	/*print_status_information();*/
+	/*uint8_t data_buffer[100] = {1,2,3,4,5,6,7,8,9,10,*/
+/*1,2,3,4,5,6,7,8,9,10,*/
+/*1,2,3,4,5,6,7,8,9,10,*/
+/*1,2,3,4,5,6,7,8,9,10,*/
+/*1,2,3,4,5,6,7,8,9,10,*/
+/*1,2,3,4,5,6,7,8,9,10,*/
+/*1,2,3,4,5,6,7,8,9,10,*/
+/*1,2,3,4,5,6,7,8,9,10,*/
 
-	/*set_regulator_mode();*/
-	/*print_status_information();*/
-	/*set_standby_mode(); //into standby rc*/
-						
+/*1,2,3,4,5,6,7,8,9,10,*/
 
-	uint8_t data_buffer[100] = {1,2,3,4,5,6,7,8,9,10,
-1,2,3,4,5,6,7,8,9,10,
-1,2,3,4,5,6,7,8,9,10,
-1,2,3,4,5,6,7,8,9,10,
-1,2,3,4,5,6,7,8,9,10,
-1,2,3,4,5,6,7,8,9,10,
-1,2,3,4,5,6,7,8,9,10,
-1,2,3,4,5,6,7,8,9,10,
+/*1,2,3,4,5,6,7,8,9,10};*/
 
-1,2,3,4,5,6,7,8,9,10,
+	/*char small_data_buff[9] = "hihoware";*/
+		
+	/*send_packet(small_data_buff, 9);*/
 
-1,2,3,4,5,6,7,8,9,10};
-
-	char small_data_buff[9] = "whatever";
-	/*tx_mode_attempt((uint8_t*)small_data_buff, 9);*/
-	
-	/*SLEEP_MS(1000);*/
-	send_packet(small_data_buff, 9);
-	/*uint16_t irq_status = get_irq_status(); */
-	/*printf("%d", irq_status);*/
-
-	/*rx_mode_attempt();*/
-	//rxConfig();	
-
-	/*uint8_t ocp_setting;*/
-	/*read_registers(REG_OCP_CONFIG, &ocp_setting, 1);*/
-	/*printf("0x%02X\n", ocp_setting);*/
+	char messageBuffer[255];
+	int messageLen = 0;
+	messageLen = enterMessage(messageBuffer);
+	printf("%d", messageLen);
+	send_packet((uint8_t*)messageBuffer, (messageLen + 1));
 
 	int closeStatus = lgSpiClose(spi_handle);
     if (closeStatus < 0) {
@@ -114,26 +101,11 @@ void nss_select(){
 	*/
 	int nss_low = lgGpioWrite(chip_handle, CS_PIN, LOW);
 	int nss_status = lgGpioRead(chip_handle, CS_PIN);
-	
-	//blocking code to make sure nss goes low
-	/*while (nss_status == HIGH) {*/
-		/*SLEEP_MS(1);*/
-		/*nss_status = lgGpioRead(chip_handle, CS_PIN);*/
-	/*}*/
-	/*puts("CS LOW");*/
-
 }
 void nss_deselect(){
 	int nss_high = lgGpioWrite(chip_handle, CS_PIN, HIGH);
 	
 	int nss_status = lgGpioRead(chip_handle, CS_PIN);
-	
-	//blocking code to make sure nss goes high
-	/*while (nss_status == LOW) {*/
-		/*SLEEP_MS(1);*/
-		/*nss_status = lgGpioRead(chip_handle, CS_PIN);*/
-	/*}*/
-	/*puts("CS HIGH");*/
 }
 
 void wait_on_busy(void){
@@ -150,16 +122,6 @@ void wait_on_busy(void){
 void clear_tx_irq(){
 
 	sendCommand(spi_handle, CLEAR_IRQ_STATUS_OP, 0x0, 1); //clear out the first bit
-														  
-	
-														  
-	//not sure how to do this? Think I am clearing all the status
-	/*uint8_t NOP_buffer[2] = {NO_OPERATION, NO_OPERATION};*/
-	/*uint16_t  tx_irq_status = read_registers(GET_IRQ_STATUS_OP, NOP_buffer, 2);*/
-	
-	/*tx_irq_status &= ~TX_DONE_MASK;*/
-
-	/*write_registers(CLEAR_IRQ_STATUS_OP, (uint8_t *)tx_irq_status, 1);*/
 }
 
 void clear_rx_irq() {
@@ -309,112 +271,6 @@ void send_packet(uint8_t* data, uint16_t data_len) {
 	//need to clear IRQ
 
  }
-
-
-void rx_mode_attempt(){
-	int len = 100;
-
-	set_standby_mode();
-	print_status_information();
-	set_packet_type(LORA_PKT_TYPE);
-	set_rf_frequency(915000000);
-	set_buffer_base_addr(0x00, 0x00);
-	config_modulation_params(LORA_SF_12, LORA_BW_500, LORA_CR_4_5, 0) ;
-	config_packet_params(12, PKT_EXPLICIT_HDR, len, PKT_CRC_OFF, STD_IQ_SETUP);
-
-	set_dio_irq_params(0x03FF, RX_DONE_MASK, 0x0000, 0x0000); //sets dio1 as tx
-	set_rx_mode(0x000000); //continous mode
-						   //
-	wait_on_busy();
-	print_status_information();	   
-	wait_on_DIO_IRQ();
-	print_status_information();	   
-	
-	//should clear irq
-	uint8_t payload_len = 0;
-	uint8_t rx_buff_st_addr = 0;
-	uint8_t rx_pkt[256];
-
-	get_rx_buffer_status(&payload_len, &rx_buff_st_addr);
-	printf("payload len  ");
-	printf("%d\n", payload_len);
-	read_buffer(rx_buff_st_addr, rx_pkt, payload_len);
-
-	for(int i = 0; i < payload_len; i++)
-    {
-        printf("%c", rx_pkt[i]);
-    }
-	printf("\n");
-}
-
-void rxConfig(){
-	
-	int len = 100;
-
-	
-	set_standby_mode();
-	print_status_information();
-	set_packet_type(LORA_PKT_TYPE);
-	set_rf_frequency(915000000);
-	set_buffer_base_addr(0x00, 0x00);
-	config_modulation_params(LORA_SF_12, LORA_BW_500, LORA_CR_4_5, 0) ;
-	config_packet_params(12, PKT_EXPLICIT_HDR, len, PKT_CRC_OFF, STD_IQ_SETUP);
-
-	set_dio_irq_params(0x03FF, RX_DONE_MASK, 0x0000, 0x0000); //sets dio1 as tx
-	set_rx_mode(0x000000); //continous mode
-		wait_on_busy();
-		print_status_information();	   
-						   //
-	while (1) {
-		
-		wait_on_DIO_IRQ();
-		print_status_information();	
-		get_irq_status();
-		clear_irq_status(1);
-		retreiveMessage();
-		rx_done_flag = 0;
-		}
-}
-void retreiveMessage(){
-
-
-	uint8_t payload_len = 0;
-	uint8_t rx_buff_st_addr = 0;
-	uint8_t rx_pkt[256];
-
-	get_rx_buffer_status(&payload_len, &rx_buff_st_addr);
-	printf("payload len  ");
-	printf("%d\n", payload_len);
-	read_buffer(rx_buff_st_addr, rx_pkt, payload_len);
-
-	for(int i = 0; i < payload_len; i++)
-    {
-        printf("%c", rx_pkt[i]);
-    }
-	printf("\n");
-
-}
-
-void set_rx_mode(uint32_t timeout) {
-
-	ant_sw_on();
-
-	SLEEP_MS(100);
-	uint8_t rx_gain = RX_GAIN_PWR_SAVING;
-	write_registers(REG_RX_GAIN, &rx_gain, 1);
-	wait_on_busy();
-	uint8_t readRegVal;
-	read_registers(REG_RX_GAIN, &readRegVal, 1);
-	printf("0x%02X\n", readRegVal);
-	uint8_t timeout_buff[3];
-	timeout_buff[0] = (uint8_t) (timeout >> 16) & 0xFF;
-    timeout_buff[1] = (uint8_t) (timeout >> 8) & 0xFF;
-    timeout_buff[2] = (uint8_t) timeout & 0xFF;
-
-	sendCommand(spi_handle, SET_RX_MODE_OP, timeout_buff, 3);
-
-}
-
 
 //tx functions
 void set_standby_mode(){
@@ -603,16 +459,6 @@ void wait_on_DIO_IRQ(void){
 	puts("dio done!");
 }
 
-void get_rx_buffer_status(uint8_t* payload_len, uint8_t* rx_start_buff_addr) {
-
-	uint8_t rx_status[2];
-
-	getCommand(spi_handle, GET_RX_BUFF_STATUS_OP, rx_status, 2);
-
-	*payload_len = rx_status[0];
-	*rx_start_buff_addr = rx_status[1];
-}
-
 void sendCommand(int spi_hanlde, uint8_t opcode, uint8_t* data, uint8_t len){
 
 	nss_select();
@@ -733,21 +579,18 @@ uint16_t get_device_errors(){
 void clear_device_errors(){
 
 	uint8_t clear_buff[2] = {0x00};
-
 	sendCommand(spi_handle, CLR_DEV_ERRS_OP, clear_buff, 2);
 }
 void set_regulator_mode() {
 
 	uint8_t regu_mode = 0; //ldo mode only
-
 	sendCommand(spi_handle, SET_REG_MODE_OP, &regu_mode, 1);
-
 }
 
 void factoryReset(){
 
 	int low = lgGpioWrite(chip_handle, SX_NRESET_PIN, LOW);
-
+	
 	SLEEP_MS(100);
 
 	int high = lgGpioWrite(chip_handle, SX_NRESET_PIN, HIGH);
@@ -765,5 +608,20 @@ void ant_sw_on(){
 void ant_sw_off() {
 	int ant_sw = lgGpioWrite(chip_handle, ANT_SW, LOW);
 }
+int enterMessage(char *messageBuffer) {
+    puts("Enter message to be sent:");
 
-
+    // Read input into the buffer
+    if (fgets(messageBuffer, sizeof(messageBuffer), stdin) != NULL) {
+        // Remove the newline character at the end if present
+        size_t len = strlen(messageBuffer);
+        if (len > 0 && messageBuffer[len - 1] == '\n') {
+            messageBuffer[len - 1] = '\0';
+        }
+        return len; // Return the length of the string excluding the null terminator
+    } else {
+        // Handle the error case where input could not be read
+        printf("Error reading input\n");
+        return -1; // Return an error code
+    }
+}

@@ -78,11 +78,11 @@ int main() {
 
 1,2,3,4,5,6,7,8,9,10};
 
-	tx_mode_attempt(data_buffer, 100);	
+	//tx_mode_attempt(data_buffer, 100);	
 	/*uint16_t irq_status = get_irq_status(); */
 	/*printf("%d", irq_status);*/
 
-	//rx_mode_attempt();
+	rx_mode_attempt();
 	
 
 	/*uint8_t ocp_setting;*/
@@ -434,9 +434,6 @@ uint8_t read_buffer(uint8_t offset, uint8_t* data, uint16_t len){
 	wait_on_busy();
 	return status;
 }
-
-
-
 
 void config_modulation_params(uint8_t spreading_factor, uint8_t bandwidth, uint8_t coding_rate, uint8_t low_data_rate_opt){
 
