@@ -3,11 +3,9 @@
 
 #include <stddef.h>
 #include <stdint.h>
-#include <cmath>
-#include "hardware/spi.h"
 
 // Setup byte packing for structures to treat them as char buffers
-#pragma pack(1)
+//#pragma pack(1) //what is this?
 
 /* General OP-Codes */
 #define NO_OPERATION                    UINT8_C(0x00) // NOP
@@ -348,35 +346,35 @@ typedef struct packet_statistics_t
     uint16_t num_pkt_len_err;
 } packet_stats;
 
-typedef struct sx_hardware_configuration_t
-{
-    spi_inst_t* spi_port;
-    uint8_t nss_pin;
-    uint8_t busy_pin;
-    uint8_t ant_sw_pwr_pin;
+//typedef struct sx_hardware_configuration_t
+//{
+    //spi_inst_t* spi_port;
+    //uint8_t nss_pin;
+    //uint8_t busy_pin;
+    //uint8_t ant_sw_pwr_pin;
 
-    // IRQ Mask
-    uint16_t irq_mask;
+    //// IRQ Mask
+    //uint16_t irq_mask;
     
-    // DIO1 Configuration
-    uint8_t dio1_pin;
-    uint16_t dio1_irq_mask;
+    //// DIO1 Configuration
+    //uint8_t dio1_pin;
+    //uint16_t dio1_irq_mask;
 
-    // DIO2 Configuration
-    uint8_t dio2_config;    // RF SW CTRL or Not
-    uint8_t dio2_pin;       // If used as a general irq pin
-    uint16_t dio2_irq_mask;  // IRQ mask if used as a general irq pin
+    //// DIO2 Configuration
+    //uint8_t dio2_config;    // RF SW CTRL or Not
+    //uint8_t dio2_pin;       // If used as a general irq pin
+    //uint16_t dio2_irq_mask;  // IRQ mask if used as a general irq pin
 
-    // DIO3 configuration
-    uint8_t dio3_config;    // DIO3 Used as TCXO ctrl
-    uint8_t tcxo_voltage;   // TCXO VDD voltage
-    uint32_t tcxo_config_delay; // TCXO configuration timeout
-    uint8_t dio3_pin;       // If used as gereral irq pin
-    uint16_t dio3_irq_mask;  // IRQ mask if used as a general irq pin
+    //// DIO3 configuration
+    //uint8_t dio3_config;    // DIO3 Used as TCXO ctrl
+    //uint8_t tcxo_voltage;   // TCXO VDD voltage
+    //uint32_t tcxo_config_delay; // TCXO configuration timeout
+    //uint8_t dio3_pin;       // If used as gereral irq pin
+    //uint16_t dio3_irq_mask;  // IRQ mask if used as a general irq pin
 
-    uint8_t dc_dc_ldo_mode;
+    //uint8_t dc_dc_ldo_mode;
 
-} sx_hw_config;
+//} sx_hw_config;
 
 #define PACKET_BUFFER_SIZE 5
 

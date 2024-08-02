@@ -38,13 +38,6 @@
 
 
 // Function prototypes
-int lgpio_init(void);
-void gpio_init(int chip_handle);
-int spiHandle(int spiDev, int spiChannel, int spiBaud, int spiFlag);
-void printBuffer(const char *buffer, int len);
-int getStatus(int spi_handle, char opcode, char *response, int response_len);
-void wait_on_busy(void);
-/*void tx_mode_attempt(uint8_t* data, uint16_t len);*/
 int chip_handle = 0;
 int spi_handle = 0;
 int main() {
@@ -63,12 +56,14 @@ int main() {
 	
 	factoryReset();
 	wait_on_busy(); //so waiting for standby mode
-	print_status_information();
+	
+	get_irq_status();
+	/*print_status_information();*/
 
-	set_regulator_mode();
-	print_status_information();
-	set_standby_mode(); //into standby rc
-						//
+	/*set_regulator_mode();*/
+	/*print_status_information();*/
+	/*set_standby_mode(); //into standby rc*/
+						
 
 	uint8_t data_buffer[100] = {1,2,3,4,5,6,7,8,9,10,
 1,2,3,4,5,6,7,8,9,10,
@@ -83,16 +78,16 @@ int main() {
 
 1,2,3,4,5,6,7,8,9,10};
 
-	tx_mode_attempt(data_buffer, 100);	
-	uint16_t irq_status = get_irq_status(); 
-	printf("%d", irq_status);
+	//tx_mode_attempt(data_buffer, 100);	
+	/*uint16_t irq_status = get_irq_status(); */
+	/*printf("%d", irq_status);*/
 
-	/*rx_mode_attempt();*/
+	rx_mode_attempt();
 	
 
-	uint8_t ocp_setting;
-	read_registers(REG_OCP_CONFIG, &ocp_setting, 1);
-	printf("0x%02X\n", ocp_setting);
+	/*uint8_t ocp_setting;*/
+	/*read_registers(REG_OCP_CONFIG, &ocp_setting, 1);*/
+	/*printf("0x%02X\n", ocp_setting);*/
 
 	int closeStatus = lgSpiClose(spi_handle);
     if (closeStatus < 0) {
@@ -164,11 +159,14 @@ void clear_rx_irq() {
 	sendCommand(spi_handle, CLEAR_IRQ_STATUS_OP, (uint8_t*) 1, 1);
 }
 uint16_t get_irq_status() {
-	uint8_t irq_buff[2];
+
+	//this function needs work
+	uint8_t irq_buff[4];
 	uint16_t result;
 
-	getCommand(spi_handle, GET_IRQ_STATUS_OP, irq_buff, 2);
-	result = ((irq_buff[0] & 0x0003) << 8) & (irq_buff[1] & 0x00FF);
+	getCommand(spi_handle, GET_IRQ_STATUS_OP, irq_buff, 4);
+	  result = ((irq_buff[2] & 0x0003) <<8) & (irq_buff[3] &0x00FF);
+	/*result = ((irq_buff[0] & 0x0003) << 8) & (irq_buff[1] & 0x00FF);*/
 	//only care about the last 2 bits, then shift them to the right
 	//only care about last 8 bits? combine tham
 	//why what is going on, this tells status on all irq, there are only 10
@@ -252,7 +250,7 @@ void tx_mode_attempt(uint8_t* data, uint16_t len) {
 	puts("8");
 	print_status_information();
 	
-	set_dio_irq_params(0xFFFF,TX_DONE_MASK, 0x0000, 0x0000); //sets dio1 as tx
+	set_dio_irq_params(0x03FF, TX_DONE_MASK, 0x0000, 0x0000); //sets dio1 as tx
 	puts("9");
 	print_status_information();
 	set_tx_mode(0x00); 
@@ -261,7 +259,7 @@ void tx_mode_attempt(uint8_t* data, uint16_t len) {
 	get_irq_status();
 	puts("tx DIO1 pin go high?");
 
-	wait_on_TX_IRQ();
+	wait_on_DIO_IRQ();
 	clear_tx_irq();
 
 	puts("transmission success"); //should go back into standby mode, can we check
@@ -278,18 +276,13 @@ void rx_mode_attempt(){
 	set_buffer_base_addr(0x00, 0x00);
 	config_modulation_params(LORA_SF_12, LORA_BW_500, LORA_CR_4_5, 0) ;
 	config_packet_params(12, PKT_EXPLICIT_HDR, len, PKT_CRC_OFF, STD_IQ_SETUP);
-		uint8_t reg_iq_pol;
-        read_registers(REG_IQ_POL_SETUP, &reg_iq_pol, 1);
-        reg_iq_pol |= 0x04;
-        write_registers(REG_IQ_POL_SETUP, &reg_iq_pol, 1);
 
-
-	set_dio_irq_params(0xFFFF, RX_DONE_MASK, 0x0000, 0x0000); //sets dio1 as tx
-	set_rx_mode(0xFFFFFF); //continous mode
+	set_dio_irq_params(0x03FF, PREAMBLE_DETECTED_MASK, 0x0000, 0x0000); //sets dio1 as tx
+	set_rx_mode(0x000000); //continous mode
 						   //
 	wait_on_busy();
 	print_status_information();	   
-	SLEEP_MS(10000);
+	wait_on_DIO_IRQ();
 	print_status_information();	   
 	
 	//should clear irq
@@ -306,7 +299,7 @@ void rx_mode_attempt(){
     {
         printf("%c", rx_pkt[i]);
     }
-
+	printf("\n");
 }
 
 void set_rx_mode(uint32_t timeout) {
@@ -442,9 +435,6 @@ uint8_t read_buffer(uint8_t offset, uint8_t* data, uint16_t len){
 	return status;
 }
 
-
-
-
 void config_modulation_params(uint8_t spreading_factor, uint8_t bandwidth, uint8_t coding_rate, uint8_t low_data_rate_opt){
 
 	uint8_t mod_params[4] = {spreading_factor, bandwidth, coding_rate, low_data_rate_opt};
@@ -504,31 +494,17 @@ void set_tx_mode(uint32_t timeout) {
 
 	wait_on_busy();
 }
+void wait_on_DIO_IRQ(void){
 
-void wait_on_TX_IRQ(void) {
-
-	//waits for TX IRQ to go low, means tx done and clears IRQ flag
-	
-	int txStatus= lgGpioRead(chip_handle, TX_PIN); 
-	while (txStatus == LOW) {
+	int dioStatus= lgGpioRead(chip_handle, DIO_PIN); 
+	while (dioStatus == LOW) {
 		puts("still low");
 		uint16_t irq_stats = get_irq_status();
 		printf("%d\n", irq_stats);
 		SLEEP_MS(1000);
+		dioStatus= lgGpioRead(chip_handle, DIO_PIN); 
 	}
-	puts("tx done!");
-}
-void wait_on_RX_IRQ(){
-
-	int txStatus= lgGpioRead(chip_handle, RX_PIN); //wait until goes high
-	while (txStatus == LOW) {
-		puts("still low");
-		uint16_t irq_stats = get_irq_status();
-		printf("%d\n", irq_stats);
-		SLEEP_MS(1000);
-	}
-	puts("rx done!");
-
+	puts("dio done!");
 }
 
 void get_rx_buffer_status(uint8_t* payload_len, uint8_t* rx_start_buff_addr) {
@@ -549,14 +525,16 @@ void sendCommand(int spi_hanlde, uint8_t opcode, uint8_t* data, uint8_t len){
 
 	if (len > 0) {
 		int writeData = lgSpiWrite(spi_handle, (const char *) data, len);
-	}
+	
 
-	nss_deselect();
+		nss_deselect();
 
-	SLEEP_MS(1);
+		SLEEP_MS(1);
 
-	if (opcode != SET_SLEEP_OP){
-		wait_on_busy();
+		if (opcode != SET_SLEEP_OP){
+			wait_on_busy();
+		}
+	
 	}
 }
 
@@ -568,7 +546,7 @@ void send_packet(uint8_t* data, uint16_t data_len) {
 	set_dio_irq_params(0xFFFF, TX_DONE_MASK, 0x0000, RX_DONE_MASK); //setup tx done irq
 	set_tx_mode(0x00);
 
-	wait_on_TX_IRQ();
+	wait_on_DIO_IRQ();
 
 	//need to clear IRQ
 
