@@ -2,6 +2,7 @@
 #include <lgpio.h>
 #include <math.h>
 #include "../header_files/transmit.h"
+#include "helpFunctions.h"
 #include "sx1262x_defs_custom.h"
 #include "../header_files/helpFunctions.h"
 
@@ -40,6 +41,7 @@
 // Function prototypes
 int chip_handle = 0;
 int spi_handle = 0;
+int interruptFlag = 0;
 int main() {
     
 	puts("start");
@@ -66,9 +68,7 @@ int main() {
 						
 
 
-	rx_mode_attempt();
-	
-
+	receive();
 
 	int closeStatus = lgSpiClose(spi_handle);
     if (closeStatus < 0) {
@@ -205,49 +205,7 @@ uint8_t read_registers(uint16_t reg_addr, uint8_t* data, uint8_t len){
 	return status;
 }
 
-void tx_mode_attempt(uint8_t* data, uint16_t len) {
-	puts("start of function");
-	set_standby_mode();
-	puts("1");
-	set_packet_type(LORA_PKT_TYPE);
-
-	puts("2");
-	set_rf_frequency(915000000);
-	set_pa_config(0x04, 0x07, SX1262_DEV_TYPE);
-	puts("3");
-	set_tx_params(0, SET_RAMP_3400U);
-	puts("4");
-
-	print_status_information();
-	set_buffer_base_addr(0x00, 0x00);
-	puts("5");
-	write_buffer(0x00, data, len);
-	puts("6");
-
-	config_modulation_params(LORA_SF_12, LORA_BW_500, LORA_CR_4_5, 0) ;
-	puts("7");
-	print_status_information();
-	config_packet_params(12, PKT_EXPLICIT_HDR, len, PKT_CRC_OFF, STD_IQ_SETUP);
-	puts("8");
-	print_status_information();
-	
-	set_dio_irq_params(0x03FF, TX_DONE_MASK, 0x0000, 0x0000); //sets dio1 as tx
-	puts("9");
-	print_status_information();
-	set_tx_mode(0x00); 
-	puts("10");
-
-	get_irq_status();
-	puts("tx DIO1 pin go high?");
-
-	wait_on_DIO_IRQ();
-	clear_tx_irq();
-
-	puts("transmission success"); //should go back into standby mode, can we check
-	print_status_information();
-}
-
-void rx_mode_attempt(){
+void receive(){
 	int len = 100;
 
 	set_standby_mode();
@@ -258,29 +216,35 @@ void rx_mode_attempt(){
 	config_modulation_params(LORA_SF_12, LORA_BW_500, LORA_CR_4_5, 0) ;
 	config_packet_params(12, PKT_EXPLICIT_HDR, len, PKT_CRC_OFF, STD_IQ_SETUP);
 
-	set_dio_irq_params(0x03FF, PREAMBLE_DETECTED_MASK, 0x0000, 0x0000); //sets dio1 as tx
-	set_rx_mode(0x000000); //continous mode
+	set_dio_irq_params(0xFFFF, RX_DONE_MASK, 0x0000, 0x0000); //sets dio1 as tx
+	set_rx_mode(0xFFFFFF); //continous mode
 						   //
 	wait_on_busy();
 	print_status_information();	   
 	wait_on_DIO_IRQ();
 	print_status_information();	   
 	
+	
+	while (interruptFlag == 0) {
+		wait_on_DIO_IRQ();
 	//should clear irq
-	uint8_t payload_len = 0;
-	uint8_t rx_buff_st_addr = 0;
-	uint8_t rx_pkt[256];
+		uint8_t payload_len = 0; 
+		uint8_t rx_buff_st_addr = 0;
+		uint8_t rx_pkt[256];
 
-	get_rx_buffer_status(&payload_len, &rx_buff_st_addr);
-	printf("payload len  ");
-	printf("%d\n", payload_len);
-	read_buffer(rx_buff_st_addr, rx_pkt, payload_len);
+		get_rx_buffer_status(&payload_len, &rx_buff_st_addr);
+		printf("payload len  ");
+		printf("%d\n", payload_len);
+		read_buffer(rx_buff_st_addr, rx_pkt, payload_len);
 
-	for(int i = 0; i < payload_len; i++)
-    {
-        printf("%c", rx_pkt[i]);
-    }
-	printf("\n");
+		for(int i = 0; i < payload_len; i++)
+		{
+			printf("%c", rx_pkt[i]);
+		}
+		printf("\n");
+		clear_irq_status(0x03FF);
+		clear_irq_status(0x03FF); //i have no idea why this needs to sent twice for it to work, but twice for rx will reset once for tx????
+	}
 }
 
 void set_rx_mode(uint32_t timeout) {
@@ -480,8 +444,6 @@ void wait_on_DIO_IRQ(void){
 	int dioStatus= lgGpioRead(chip_handle, DIO_PIN); 
 	while (dioStatus == LOW) {
 		puts("still low");
-		uint16_t irq_stats = get_irq_status();
-		printf("%d\n", irq_stats);
 		SLEEP_MS(1000);
 		dioStatus= lgGpioRead(chip_handle, DIO_PIN); 
 	}
