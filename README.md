@@ -9,10 +9,7 @@ The project is written in C and leverages the LG library for GPIO control. The L
 ## Cloning the Repo
 ```
 git clone https://github.com/wyattcolburn/Project-OWL.git
-cd Project-OWL
-cd lg
-make
-sudo make install
+bash install.sh
 ```
 ### Running Spi Loopback Test
  The first program you should run is spi_loopback_test
@@ -22,10 +19,26 @@ sudo make install
 ```
 ### Running Example Code 
 #### RX
-
-
+Naviagate to the rx directory
+For one-shot mode, in which you would receive on message
+```
+cd files
+cd rx
+./receive
+```
+To test continous mode where the program will run until cancelled and receive messages
+```
+cd files
+cd rx
+./receiveCont
+```
 #### TX
-
+Navaiagte to tx directory
+```
+cd files
+cd tx
+./transmit "your message"
+```
 
 ## Install GPIO DRIVER
 To install LG indepent to this project:
