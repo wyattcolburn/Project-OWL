@@ -2,8 +2,7 @@
 #include <lgpio.h>
 #include "spi_loopback.h"
 
-// Function prototypes
-
+// Function prototype
 int main() {
     puts("start");
     lgpio_init();
