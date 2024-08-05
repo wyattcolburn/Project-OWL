@@ -36,14 +36,14 @@
 	/*A5 5*/
 	/*A6 6*/
 int enterMessage(char *messageBuffer);
-
+uint16_t count_characters(const char *input);
 // Function prototypes
 int chip_handle = 0;
 int spi_handle = 0;
 
 uint8_t rx_done_flag = 0;
 
-int main() {
+int main(int argc, char *argv[]) {
     
 	puts("start");
     //gpio init
@@ -60,15 +60,22 @@ int main() {
 	factoryReset();
 	wait_on_busy(); //so waiting for standby mode
 	
+	char messageBuff[100];
 
+	//user has provided a message
+	if (argc < 2) {
+		printf("Usage: %s <message>\n", argv[0]);
+		return 1;
+	}
 
-	//only two things need to change code are what tx buff and message len
-	char tx_buff[9] = "hihoware";
+	// Copy the message to the buffer
+    strncpy(messageBuff, argv[1], sizeof(messageBuff) - 1);
+    messageBuff[sizeof(messageBuff) - 1] = '\0'; // Ensure null-termination
 		
-	send_packet((uint8_t *)tx_buff, 9); //dont forget to change len here
+	send_packet((uint8_t *)messageBuff, count_characters(messageBuff)+ 1);	
+
 	int dio_status = gpio_status(chip_handle, DIO_PIN);
-	printf("dio 1 pin\n");
-	printf("%d\n", dio_status);
+	(dio_status ==  0) ? puts("tx done") : puts("tx error");
 
 	int closeStatus = lgSpiClose(spi_handle);
     if (closeStatus < 0) {
@@ -80,6 +87,19 @@ int main() {
     return 0;
 }
 
+uint16_t count_characters(const char *input) {
+    // Use strlen to get the length of the string
+    size_t length = strlen(input);
+
+    // Ensure that the length can fit in a uint16_t
+    if (length > UINT16_MAX) {
+        // If the length is greater than what can be stored in a uint16_t, handle the error
+        // For simplicity, we'll return the maximum value of uint16_t
+        return UINT16_MAX;
+    }
+
+    return (uint16_t)length;
+}
 void nss_select(){
 	/*
 	This function is used for manual control of the CS pin (external gpio,
@@ -243,6 +263,11 @@ void tx_config(uint16_t payload_len){
 
 void send_packet(uint8_t* data, uint16_t data_len) {
 
+// Print the message from the buffer
+    printf("\n\n buffer message:\n");
+	printf("Message: %s\n", data);
+
+	printf("%d", sizeof(data));
 	set_buffer_base_addr(0x00, 0x00); //does this order matter
 	write_buffer(0x00, data, data_len);
 	puts("pre dio irq params set");
