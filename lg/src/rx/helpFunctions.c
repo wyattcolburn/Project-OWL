@@ -45,7 +45,11 @@ void printBuffer(const char *buffer, int len) {
     printf("\n");
 }
 
+int gpio_status(int chip_handle, const int gpio_pin){
 
+	int returnVal = lgGpioRead(chip_handle, gpio_pin);
+	return returnVal;
+}
 uint8_t getCommand(int spi_handle, uint8_t opcode, uint8_t* data, uint8_t len) {
 
 	uint8_t status;

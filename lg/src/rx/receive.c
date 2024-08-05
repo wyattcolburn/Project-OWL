@@ -1,9 +1,9 @@
 #include <stdio.h>
 #include <lgpio.h>
 #include <math.h>
-#include "transmit.h"
+#include "../header_files/transmit.h"
 #include "sx1262x_defs_custom.h"
-#include "helpFunctions.h"
+#include "../header_files/helpFunctions.h"
 
 #define GET_STATUS_OP                   UINT8_C(0xC0)
 #define GET_STATS_OP                    UINT8_C(0x10)
@@ -65,29 +65,10 @@ int main() {
 	/*set_standby_mode(); //into standby rc*/
 						
 
-	uint8_t data_buffer[100] = {1,2,3,4,5,6,7,8,9,10,
-1,2,3,4,5,6,7,8,9,10,
-1,2,3,4,5,6,7,8,9,10,
-1,2,3,4,5,6,7,8,9,10,
-1,2,3,4,5,6,7,8,9,10,
-1,2,3,4,5,6,7,8,9,10,
-1,2,3,4,5,6,7,8,9,10,
-1,2,3,4,5,6,7,8,9,10,
-
-1,2,3,4,5,6,7,8,9,10,
-
-1,2,3,4,5,6,7,8,9,10};
-
-	//tx_mode_attempt(data_buffer, 100);	
-	/*uint16_t irq_status = get_irq_status(); */
-	/*printf("%d", irq_status);*/
 
 	rx_mode_attempt();
 	
 
-	/*uint8_t ocp_setting;*/
-	/*read_registers(REG_OCP_CONFIG, &ocp_setting, 1);*/
-	/*printf("0x%02X\n", ocp_setting);*/
 
 	int closeStatus = lgSpiClose(spi_handle);
     if (closeStatus < 0) {

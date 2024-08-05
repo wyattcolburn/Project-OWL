@@ -16,7 +16,7 @@
 
 #define READY 0
 #define BUSY 1
-
+#define CLEAR_ALL_IRQ 0x03FF
 //MARCO for delay_ms 
 #define SLEEP_MS(ms) lguSleep((ms) / 1000.0)
 //function protypes
