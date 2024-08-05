@@ -1,3 +1,5 @@
+# Project OWL LORA
+
 Hello,
 
 The work in this project is for Project-OWL Summer Research. The goal of this repo is to interface the raspberry pi with a SX1262 to send/receive LoRa packets.
@@ -13,7 +15,7 @@ make
 sudo make install
 
 If you are cloning this repo lg is already installed:
-
+:
 cd lg
 make 
 sudo make install
