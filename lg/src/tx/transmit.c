@@ -66,7 +66,9 @@ int main() {
 	char tx_buff[9] = "hihoware";
 		
 	send_packet((uint8_t *)tx_buff, 9); //dont forget to change len here
-
+	int dio_status = gpio_status(chip_handle, DIO_PIN);
+	printf("dio 1 pin\n");
+	printf("%d\n", dio_status);
 
 	int closeStatus = lgSpiClose(spi_handle);
     if (closeStatus < 0) {
@@ -243,16 +245,20 @@ void send_packet(uint8_t* data, uint16_t data_len) {
 
 	set_buffer_base_addr(0x00, 0x00); //does this order matter
 	write_buffer(0x00, data, data_len);
-
+	puts("pre dio irq params set");
 	set_dio_irq_params(0xFFFF, TX_DONE_MASK, 0x0000, RX_DONE_MASK); //setup tx done irq
+	puts("post dio");
 																	
 	tx_config(data_len);
+	puts("pre tx");
+	
 	print_status_information();
 	set_tx_mode(0x00); //this is the command to start tx
+	puts("post tx");
 	print_status_information();
 
 	wait_on_DIO_IRQ();
-
+	clear_irq_status(CLEAR_ALL_IRQ);
 	//need to clear IRQ
 
  }
@@ -428,11 +434,11 @@ void set_tx_mode(uint32_t timeout) {
 
 	sendCommand(spi_handle, SET_TX_MODE_OP, timeout_buff, 3);
 	/*print_status_information();*/
-
+	puts("set tx mode");
 	wait_on_busy();
 }
 void wait_on_DIO_IRQ(void){
-
+	//waits of interrupt mapped GPIO pin to high
 	int dioStatus= lgGpioRead(chip_handle, DIO_PIN); 
 	while (dioStatus == LOW) {
 		puts("still low");
