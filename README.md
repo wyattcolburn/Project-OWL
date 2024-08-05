@@ -9,6 +9,7 @@ The project is written in C and leverages the LG library for GPIO control. The L
 ## Cloning the Repo
 ```
 git clone https://github.com/wyattcolburn/Project-OWL.git
+chmod +X install.sh
 bash install.sh
 ```
 ### Running Spi Loopback Test
