@@ -15,7 +15,7 @@ bash install.sh
  The first program you should run is spi_loopback_test
  Make sure to short MOSI to MISO (GPIO PINS 10 --> GPIO 9)
  ```
- ./spi_loopback_test`
+ ./spi_loopback_test
 ```
 ### Running Example Code 
 #### RX
