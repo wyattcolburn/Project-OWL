@@ -6,14 +6,36 @@ The work in this project is for Project-OWL Summer Research. The goal of this re
 
 The project is written in C and leverages the LG library for GPIO control. The LG library is based of the linux kernel driver so will work with the new raspberry pi5.
 
+## Cloning the Repo
+```
+git clone https://github.com/wyattcolburn/Project-OWL.git
+cd Project-OWL
+cd lg
+make
+sudo make install
+```
+### Running Spi Loopback Test
+ The first program you should run is spi_loopback_test
+ Make sure to short MOSI to MISO (GPIO PINS 10 --> GPIO 9)
+ ```
+ ./spi_loopback_test`
+```
+### Running Example Code 
+#### RX
+
+
+#### TX
+
+
+## Install GPIO DRIVER
 To install LG indepent to this project:
 
-wget http://abyz.me.uk/lg/lg.zip  
+``````wget http://abyz.me.uk/lg/lg.zip  
 unzip lg.zip  
 cd lg  
 make  
 sudo make install
-
+``````
 If you are cloning this repo lg is already installed:
 :
 cd lg
