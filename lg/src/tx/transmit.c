@@ -260,6 +260,9 @@ void send_packet(uint8_t* data, uint16_t data_len) {
 	wait_on_DIO_IRQ();
 	clear_irq_status(CLEAR_ALL_IRQ);
 	//need to clear IRQ
+int dio = gpio_status(chip_handle, DIO_PIN);
+	printf("DIO\n");
+	printf("%d\n", dio);
 
  }
 
