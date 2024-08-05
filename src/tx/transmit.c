@@ -72,6 +72,8 @@ int main(int argc, char *argv[]) {
     strncpy(messageBuff, argv[1], sizeof(messageBuff) - 1);
     messageBuff[sizeof(messageBuff) - 1] = '\0'; // Ensure null-termination
 		
+
+	//function that will take from buffer -->
 	send_packet((uint8_t *)messageBuff, count_characters(messageBuff)+ 1);	
 
 	int dio_status = gpio_status(chip_handle, DIO_PIN);
