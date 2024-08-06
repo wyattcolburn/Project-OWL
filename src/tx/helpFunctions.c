@@ -36,6 +36,10 @@ void gpio_init(int chip_handle){
 	(txIRQ >= 0) ? puts("tx init") : puts("tx fail");	
 	int ant_sw = lgGpioClaimOutput(chip_handle, 0, ANT_SW, LOW);
 	(ant_sw >= 0) ? puts("ANT SW init") : puts("ant sw fail");
+
+	int cs_init = lgGpioClaimOutput(chip_handle, 0, CS_PIN, HIGH);
+	(cs_init >= 0) ? puts("CS init") : puts("cs fail");
+	
 }
 void printBuffer(const char *buffer, int len) {
     // This function takes a buffer and outputs it byte by byte
