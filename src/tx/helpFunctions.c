@@ -7,7 +7,7 @@
 
 int lgpio_init(void) {
     uint8_t h;
-    h = lgGpiochipOpen(0);
+    h = lgGpiochipOpen(4);
 
     if (h >= 0) {
         puts("GPIO chip opened");
