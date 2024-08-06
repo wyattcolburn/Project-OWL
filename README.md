@@ -21,7 +21,7 @@ bash install.sh
 ### Running Example Code 
 #### RX
 Naviagate to the rx directory
-For one-shot mode, in which you would receive on message
+For one-shot mode, in which you would receive only one message
 ```
 cd files
 cd rx
