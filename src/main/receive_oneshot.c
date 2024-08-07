@@ -60,22 +60,9 @@ int interruptFlag = 0;
 	/*wait_on_busy(); //so waiting for standby mode*/
 	
 	/*get_irq_status();*/
-	/*[>print_status_information();<]*/
-
-	/*[>set_regulator_mode();<]*/
-	/*[>print_status_information();<]*/
-	/*[>set_standby_mode(); //into standby rc<]*/
-						
-
-
-	/*rx_mode_attempt();*/
-	
-	/*clear_irq_status(0x03FF);*/
-	/*clear_irq_status(0x03FF);*/
-	/*int dio = gpio_status(chip_handle, DIO_PIN);*/
-	/*printf("DIO\n");*/
-	/*printf("%d\n", dio);*/
-	
+	/*char rkt_pkt[229]= {0};	*/
+	/*rx_mode_attempt(rkt_pkt);*/
+		
 
 
 	/*int closeStatus = lgSpiClose(spi_handle);*/
@@ -87,35 +74,17 @@ int interruptFlag = 0;
 
     /*return 0;*/
 /*}*/
-
 void nss_select(){
 	/*
-	This function is used for manual control of the CS pin (external gpio,
-	not the chip one). This function pulls pin low, should be down before 
-	spi transactions
 	*/
 	int nss_low = lgGpioWrite(chip_handle, CS_PIN, LOW);
 	int nss_status = lgGpioRead(chip_handle, CS_PIN);
-	
-	//blocking code to make sure nss goes low
-	/*while (nss_status == HIGH) {*/
-		/*SLEEP_MS(1);*/
-		/*nss_status = lgGpioRead(chip_handle, CS_PIN);*/
-	/*}*/
-	/*puts("CS LOW");*/
-
 }
 void nss_deselect(){
 	int nss_high = lgGpioWrite(chip_handle, CS_PIN, HIGH);
 	
 	int nss_status = lgGpioRead(chip_handle, CS_PIN);
 	
-	//blocking code to make sure nss goes high
-	/*while (nss_status == LOW) {*/
-		/*SLEEP_MS(1);*/
-		/*nss_status = lgGpioRead(chip_handle, CS_PIN);*/
-	/*}*/
-	/*puts("CS HIGH");*/
 }
 
 void wait_on_busy(void){
@@ -133,15 +102,6 @@ void clear_tx_irq(){
 
 	sendCommand(spi_handle, CLEAR_IRQ_STATUS_OP, 0x0, 1); //clear out the first bit
 														  
-	
-														  
-	//not sure how to do this? Think I am clearing all the status
-	/*uint8_t NOP_buffer[2] = {NO_OPERATION, NO_OPERATION};*/
-	/*uint16_t  tx_irq_status = read_registers(GET_IRQ_STATUS_OP, NOP_buffer, 2);*/
-	
-	/*tx_irq_status &= ~TX_DONE_MASK;*/
-
-	/*write_registers(CLEAR_IRQ_STATUS_OP, (uint8_t *)tx_irq_status, 1);*/
 }
 
 void clear_rx_irq() {
@@ -213,7 +173,7 @@ uint8_t read_registers(uint16_t reg_addr, uint8_t* data, uint8_t len){
 	return status;
 }
 
-void rx_mode_attempt(){
+void rx_mode_attempt(char * rx_pkt){
 	int len = 100;
 
 	set_standby_mode();
@@ -232,35 +192,22 @@ void rx_mode_attempt(){
 	wait_on_DIO_IRQ();
 	print_status_information();	   
 	
+	uint8_t payload_len = 0; 
+	uint8_t rx_buff_st_addr = 0;
+	/*uint8_t rx_pkt[256];*/
+
+	get_rx_buffer_status(&payload_len, &rx_buff_st_addr);
+	printf("payload len  ");
+	printf("%d\n", payload_len);
+	read_buffer(rx_buff_st_addr, (uint8_t *)rx_pkt, payload_len);
 	
-	while (interruptFlag == 0) {
-		wait_on_DIO_IRQ();
-	//should clear irq
-		uint8_t payload_len = 0; 
-		uint8_t rx_buff_st_addr = 0;
-		uint8_t rx_pkt[256];
+	clear_irq_status(CLEAR_ALL_IRQ);
+	/*for(int i = 0; i < payload_len; i++)*/
+	/*{*/
+		/*printf("%c", rx_pkt[i]);*/
+	/*}*/
+	printf("\n");
 
-		get_rx_buffer_status(&payload_len, &rx_buff_st_addr);
-		printf("payload len  ");
-		printf("%d\n", payload_len);
-		read_buffer(rx_buff_st_addr, rx_pkt, payload_len);
-
-		for(int i = 0; i < payload_len; i++)
-		{
-			printf("%c", rx_pkt[i]);
-		}
-		printf("\n");
-		int dio = gpio_status(chip_handle, DIO_PIN);
-		printf("DIO\n");
-		printf("%d\n", dio);
-
-		clear_irq_status(0x03FF);
-		clear_irq_status(0x03FF); //i have no idea why this needs to sent twice for it to work, but twice for rx will reset once for tx????
-		SLEEP_MS(1000);
-		int dio1 = gpio_status(chip_handle, DIO_PIN);
-		printf("DIO1 reset\n");
-		printf("%d\n", dio1);
-	}
 }
 
 void set_rx_mode(uint32_t timeout) {

@@ -266,10 +266,13 @@ void tx_config(uint16_t payload_len){
 void send_packet(uint8_t* data, uint16_t data_len) {
 
 // Print the message from the buffer
-    printf("\n\n buffer message:\n");
-	printf("Message: %s\n", data);
+	printf("%d", data_len);
 
-	printf("%d", sizeof(data));
+	printf("send packet received val\n"); 
+	for (int i =0; i < data_len - 1; i++){
+		printf("%02X ", data[i]);
+	}
+
 	set_buffer_base_addr(0x00, 0x00); //does this order matter
 	write_buffer(0x00, data, data_len);
 	puts("pre dio irq params set");

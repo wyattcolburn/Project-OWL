@@ -74,7 +74,7 @@ void tx_mode(void);
 void nss_select(void);
 void nss_deselect(void);
 void set_rx_mode(uint32_t);
-void rx_mode_attempt();
+void rx_mode_attempt(char *rk_pkt);
 void ant_sw_on();
 void ant_sw_off();
 void wait_on_RX_IRQ();

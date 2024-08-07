@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "transmit.h"
+#include "cdp.h"
 
 char* readFile(const char *filename, size_t *size);
 int chip_handle = 0;
@@ -18,6 +19,8 @@ int main(){
 	// Print the buffer
     printf("File contents (%zu bytes):\n%s\n", size, buffer);
 	puts("start transmit portion of code");
+
+
 	chip_handle = lgpio_init();
 	gpio_init(chip_handle);
 	//put GPIO 26 as output for NSS-Reset(needs to be high)
@@ -27,8 +30,29 @@ int main(){
         printf("SPI port failed to open: error code %d\n", spi_handle);
         return 1;
     }
+	puts("start cdp stuff");
+	int cdpBuffer_len = size + 27;
+	puts("1");
+	// Allocate memory for cdpBuffer
+    uint8_t *cdpBuffer = (uint8_t *)malloc(cdpBuffer_len);
+    if (cdpBuffer == NULL) {
+        printf("Failed to allocate memory for cdpBuffer\n");
+        free(buffer); // Free the buffer read from the file
+        return 1;
+    }
+    
+    puts("2");
+    buffer_init(cdpBuffer, cdpBuffer_len);
+    puts("3");
+    generate_cdp(cdpBuffer, (const uint8_t *)buffer, size);
 
-	send_packet(buffer, size);
+    printf("Formatted Buffer: ");
+    for (int i = 0; i < HEADER_LENGTH + size; i++) {
+        printf("%02X ", cdpBuffer[i]);
+    }
+	puts("hi");
+	send_packet(cdpBuffer, cdpBuffer_len);
+	puts("5");
 	return 0;
 }
 
@@ -73,3 +97,4 @@ char* readFile(const char *filename, size_t *size) {
 
     return buffer;
 }
+
