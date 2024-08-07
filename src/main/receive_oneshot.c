@@ -2,6 +2,7 @@
 #include <lgpio.h>
 #include <math.h>
 #include "transmit.h"
+#include "helpFunctions.h"
 #include "sx1262x_defs_custom.h"
 #include "helpFunctions.h"
 
@@ -38,66 +39,54 @@
 
 
 // Function prototypes
-int chip_handle = 0;
-int spi_handle = 0;
-int main() {
+extern int chip_handle;
+extern int spi_handle;
+int interruptFlag = 0;
+/*int main() {*/
     
-	puts("start");
-    //gpio init
-	chip_handle = lgpio_init();
-	gpio_init(chip_handle);
-	//put GPIO 26 as output for NSS-Reset(needs to be high)
-    // Open the SPI device, spi_handle is a handle
-    spi_handle = spiHandle(0, 0, 5000000, 0);
-    if (spi_handle < 0) {
-        printf("SPI port failed to open: error code %d\n", spi_handle);
-        return 1;
-    }
+	/*puts("start");*/
+    /*//gpio init*/
+	/*chip_handle = lgpio_init();*/
+	/*gpio_init(chip_handle);*/
+	/*//put GPIO 26 as output for NSS-Reset(needs to be high)*/
+    /*// Open the SPI device, spi_handle is a handle*/
+    /*spi_handle = spiHandle(0, 0, 5000000, 0);*/
+    /*if (spi_handle < 0) {*/
+        /*printf("SPI port failed to open: error code %d\n", spi_handle);*/
+        /*return 1;*/
+    /*}*/
 	
-	factoryReset();
-	wait_on_busy(); //so waiting for standby mode
+	/*factoryReset();*/
+	/*wait_on_busy(); //so waiting for standby mode*/
 	
-	get_irq_status();
-	/*print_status_information();*/
+	/*get_irq_status();*/
+	/*[>print_status_information();<]*/
 
-	/*set_regulator_mode();*/
-	/*print_status_information();*/
-	/*set_standby_mode(); //into standby rc*/
+	/*[>set_regulator_mode();<]*/
+	/*[>print_status_information();<]*/
+	/*[>set_standby_mode(); //into standby rc<]*/
 						
 
-	uint8_t data_buffer[100] = {1,2,3,4,5,6,7,8,9,10,
-1,2,3,4,5,6,7,8,9,10,
-1,2,3,4,5,6,7,8,9,10,
-1,2,3,4,5,6,7,8,9,10,
-1,2,3,4,5,6,7,8,9,10,
-1,2,3,4,5,6,7,8,9,10,
-1,2,3,4,5,6,7,8,9,10,
-1,2,3,4,5,6,7,8,9,10,
 
-1,2,3,4,5,6,7,8,9,10,
-
-1,2,3,4,5,6,7,8,9,10};
-
-	//tx_mode_attempt(data_buffer, 100);	
-	/*uint16_t irq_status = get_irq_status(); */
-	/*printf("%d", irq_status);*/
-
-	rx_mode_attempt();
+	/*rx_mode_attempt();*/
+	
+	/*clear_irq_status(0x03FF);*/
+	/*clear_irq_status(0x03FF);*/
+	/*int dio = gpio_status(chip_handle, DIO_PIN);*/
+	/*printf("DIO\n");*/
+	/*printf("%d\n", dio);*/
 	
 
-	/*uint8_t ocp_setting;*/
-	/*read_registers(REG_OCP_CONFIG, &ocp_setting, 1);*/
-	/*printf("0x%02X\n", ocp_setting);*/
 
-	int closeStatus = lgSpiClose(spi_handle);
-    if (closeStatus < 0) {
-        printf("Failed to close SPI device: error code %d\n", closeStatus);
-        return 1;
-    }
-    printf("SPI device closed successfully\n");
+	/*int closeStatus = lgSpiClose(spi_handle);*/
+    /*if (closeStatus < 0) {*/
+        /*printf("Failed to close SPI device: error code %d\n", closeStatus);*/
+        /*return 1;*/
+    /*}*/
+    /*printf("SPI device closed successfully\n");*/
 
-    return 0;
-}
+    /*return 0;*/
+/*}*/
 
 void nss_select(){
 	/*
@@ -224,48 +213,6 @@ uint8_t read_registers(uint16_t reg_addr, uint8_t* data, uint8_t len){
 	return status;
 }
 
-void tx_mode_attempt(uint8_t* data, uint16_t len) {
-	puts("start of function");
-	set_standby_mode();
-	puts("1");
-	set_packet_type(LORA_PKT_TYPE);
-
-	puts("2");
-	set_rf_frequency(915000000);
-	set_pa_config(0x04, 0x07, SX1262_DEV_TYPE);
-	puts("3");
-	set_tx_params(0, SET_RAMP_3400U);
-	puts("4");
-
-	print_status_information();
-	set_buffer_base_addr(0x00, 0x00);
-	puts("5");
-	write_buffer(0x00, data, len);
-	puts("6");
-
-	config_modulation_params(LORA_SF_12, LORA_BW_500, LORA_CR_4_5, 0) ;
-	puts("7");
-	print_status_information();
-	config_packet_params(12, PKT_EXPLICIT_HDR, len, PKT_CRC_OFF, STD_IQ_SETUP);
-	puts("8");
-	print_status_information();
-	
-	set_dio_irq_params(0x03FF, TX_DONE_MASK, 0x0000, 0x0000); //sets dio1 as tx
-	puts("9");
-	print_status_information();
-	set_tx_mode(0x00); 
-	puts("10");
-
-	get_irq_status();
-	puts("tx DIO1 pin go high?");
-
-	wait_on_DIO_IRQ();
-	clear_tx_irq();
-
-	puts("transmission success"); //should go back into standby mode, can we check
-	print_status_information();
-}
-
 void rx_mode_attempt(){
 	int len = 100;
 
@@ -277,7 +224,7 @@ void rx_mode_attempt(){
 	config_modulation_params(LORA_SF_12, LORA_BW_500, LORA_CR_4_5, 0) ;
 	config_packet_params(12, PKT_EXPLICIT_HDR, len, PKT_CRC_OFF, STD_IQ_SETUP);
 
-	set_dio_irq_params(0x03FF, PREAMBLE_DETECTED_MASK, 0x0000, 0x0000); //sets dio1 as tx
+	set_dio_irq_params(0xFFFF, RX_DONE_MASK, 0x0000, 0x0000); //sets dio1 as tx
 	set_rx_mode(0x000000); //continous mode
 						   //
 	wait_on_busy();
@@ -285,21 +232,35 @@ void rx_mode_attempt(){
 	wait_on_DIO_IRQ();
 	print_status_information();	   
 	
+	
+	while (interruptFlag == 0) {
+		wait_on_DIO_IRQ();
 	//should clear irq
-	uint8_t payload_len = 0;
-	uint8_t rx_buff_st_addr = 0;
-	uint8_t rx_pkt[256];
+		uint8_t payload_len = 0; 
+		uint8_t rx_buff_st_addr = 0;
+		uint8_t rx_pkt[256];
 
-	get_rx_buffer_status(&payload_len, &rx_buff_st_addr);
-	printf("payload len  ");
-	printf("%d\n", payload_len);
-	read_buffer(rx_buff_st_addr, rx_pkt, payload_len);
+		get_rx_buffer_status(&payload_len, &rx_buff_st_addr);
+		printf("payload len  ");
+		printf("%d\n", payload_len);
+		read_buffer(rx_buff_st_addr, rx_pkt, payload_len);
 
-	for(int i = 0; i < payload_len; i++)
-    {
-        printf("%c", rx_pkt[i]);
-    }
-	printf("\n");
+		for(int i = 0; i < payload_len; i++)
+		{
+			printf("%c", rx_pkt[i]);
+		}
+		printf("\n");
+		int dio = gpio_status(chip_handle, DIO_PIN);
+		printf("DIO\n");
+		printf("%d\n", dio);
+
+		clear_irq_status(0x03FF);
+		clear_irq_status(0x03FF); //i have no idea why this needs to sent twice for it to work, but twice for rx will reset once for tx????
+		SLEEP_MS(1000);
+		int dio1 = gpio_status(chip_handle, DIO_PIN);
+		printf("DIO1 reset\n");
+		printf("%d\n", dio1);
+	}
 }
 
 void set_rx_mode(uint32_t timeout) {

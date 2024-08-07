@@ -10,12 +10,13 @@
 #define CS_PIN 5 //J1 pin 8
 #define ANT_SW 25 //J2 pin 1
 
-
+#define RF_FREQ 915000000
 #define LOW 0
 #define HIGH 1
 
 #define READY 0
 #define BUSY 1
+#define CLEAR_ALL_IRQ 0x03FF
 
 //MARCO for delay_ms 
 #define SLEEP_MS(ms) lguSleep((ms) / 1000.0)
@@ -79,8 +80,10 @@ void ant_sw_off();
 void wait_on_RX_IRQ();
 void get_rx_buffer_status(uint8_t* payload_len, uint8_t* rx_start_buff_addr);
 uint8_t read_buffer(uint8_t offset, uint8_t*data, uint16_t len);
-
-
+void tx_config(uint16_t payload_len);
+void send_packet(uint8_t* data, uint16_t data_len);
+void retreiveMessage();
+void rxConfig();
 #endif
 
 

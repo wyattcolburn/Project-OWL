@@ -4,10 +4,9 @@
 #include "transmit.h"
 #include "sx1262x_defs_custom.h"
 #include "helpFunctions.h"
-
 int lgpio_init(void) {
     uint8_t h;
-    h = lgGpiochipOpen(0);
+    h = lgGpiochipOpen(4);
 
     if (h >= 0) {
         puts("GPIO chip opened");
@@ -36,6 +35,10 @@ void gpio_init(int chip_handle){
 	(txIRQ >= 0) ? puts("tx init") : puts("tx fail");	
 	int ant_sw = lgGpioClaimOutput(chip_handle, 0, ANT_SW, LOW);
 	(ant_sw >= 0) ? puts("ANT SW init") : puts("ant sw fail");
+
+	int cs_init = lgGpioClaimOutput(chip_handle, 0, CS_PIN, HIGH);
+	(cs_init >= 0) ? puts("CS init") : puts("cs fail");
+	
 }
 void printBuffer(const char *buffer, int len) {
     // This function takes a buffer and outputs it byte by byte
@@ -45,7 +48,11 @@ void printBuffer(const char *buffer, int len) {
     printf("\n");
 }
 
+int gpio_status(int chip_handle, const int gpio_pin){
 
+	int returnVal = lgGpioRead(chip_handle, gpio_pin);
+	return returnVal;
+}
 uint8_t getCommand(int spi_handle, uint8_t opcode, uint8_t* data, uint8_t len) {
 
 	uint8_t status;
@@ -62,3 +69,4 @@ uint8_t getCommand(int spi_handle, uint8_t opcode, uint8_t* data, uint8_t len) {
 
 	return status;
 }
+
