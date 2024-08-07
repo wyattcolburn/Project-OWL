@@ -6,7 +6,7 @@
 #include "helpFunctions.h"
 int lgpio_init(void) {
     uint8_t h;
-    h = lgGpiochipOpen(4);
+    h = lgGpiochipOpen(4); //opening a connection linux kernel spidev #
 
     if (h >= 0) {
         puts("GPIO chip opened");
