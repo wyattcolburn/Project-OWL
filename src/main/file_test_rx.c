@@ -2,11 +2,13 @@
 #include <stdlib.h>
 #include "transmit.h"
 #include "cdp.h"
-
+#include <ctype.h>
 int chip_handle = 0;
 int spi_handle = 0;
 void printCdpPacket(const CdpPacket *packet);
-
+void remove_spaces(uint8_t *buffer);
+void processHexPacket(const char *input , unsigned char * output, int *outputLen);
+void writeCdpPacket(const CdpPacket *packet);
 int main(){
 chip_handle = lgpio_init();
 	gpio_init(chip_handle);
@@ -24,26 +26,59 @@ chip_handle = lgpio_init();
 
 	initCdpPacket(&packet);
 puts("clear cdp packet");
-	char rx_pkt[229] = {};
+	uint8_t rx_pkt[229] = {};
 
 	rx_mode_attempt(rx_pkt);
-	int payload_len = strlen(rx_pkt);
+	printf("message received\n");
+
+	int payload_len = sizeof(rx_pkt);
+	printf("printing packet\n");
 	for(int i = 0; i < payload_len; i++)
 	{
 	printf("%c", rx_pkt[i]);
 	}
 
+	printf("\n");
 
-	decode_cdp((uint8_t *) rx_pkt, payload_len+27, &packet);
+	unsigned char processedData[sizeof(rx_pkt)/2];
+	int processedDataLen;
 
+	processHexPacket((char *)rx_pkt, processedData, &processedDataLen);
 	
-	printCdpPacket(&packet);	
+	/*remove_spaces(rx_pkt);*/
+
+	/*printf("First 8 bytes: \n");*/
+    /*for (int i = 0; i < sizeof(rx_pkt); i++) {*/
+        /*printf("%c", rx_pkt[i]);*/
+    /*}*/
+    /*printf("\n");*/
+	 printf("Processed Data:\n");
+    for (int i = 0; i < processedDataLen; i++) {
+        printf("%02X", processedData[i]);
+    }
+    printf("\n");
 
 
+	decode_cdp(processedData, processedDataLen, &packet);
+	
+	
+	printCdpPacket(&packet);
+	writeCdpPacket(&packet);
 	return 0;
 }
+void remove_spaces(uint8_t *buffer) {
+    int i, j = 0;
+    int length = sizeof(buffer);
 
+    for (i = 0; i < length; i++) {
+        if (buffer[i] != ' ') {
+            buffer[j++] = buffer[i];
+        }
+    }
+    buffer[j] = '\0'; // Null-terminate the modified buffer
+}
 void printCdpPacket(const CdpPacket *packet) {
+	printf("\n");
     printf("SDUID: ");
     for (int i = 0; i < DUID_LENGTH; ++i) {
         printf("%02X ", packet->sduid[i]);
@@ -65,11 +100,72 @@ void printCdpPacket(const CdpPacket *packet) {
     printf("Topic: %02X\n", packet->topic);
     printf("Duck Type: %02X\n", packet->duckType);
     printf("Hop Count: %02X\n", packet->hopCount);
-    printf("DCRC: %08X\n", packet->dcrc);
+    printf("DCRC: %02X\n", packet->dcrc);
 
     printf("Data: ");
-    for (size_t i = 0; i < packet->dataLength; ++i) {
-        printf("%c", packet->data[i]);
+    for (size_t i = 0; i < packet->dataLength ; ++i) {
+        printf("%02X ", packet->data[i]);
     }
     printf("\n");
 }
+void writeCdpPacket(const CdpPacket *packet) {
+    FILE *file = fopen("output.txt", "w");
+    if (file == NULL) {
+        perror("Failed to open file");
+        return;
+    }
+
+    fprintf(file, "\n");
+    fprintf(file, "SDUID: ");
+    for (int i = 0; i < DUID_LENGTH; ++i) {
+        fprintf(file, "%02X ", packet->sduid[i]);
+    }
+    fprintf(file, "\n");
+
+    fprintf(file, "DDUID: ");
+    for (int i = 0; i < DUID_LENGTH; ++i) {
+        fprintf(file, "%02X ", packet->dduid[i]);
+    }
+    fprintf(file, "\n");
+
+    fprintf(file, "MUID: ");
+    for (int i = 0; i < MUID_LENGTH; ++i) {
+        fprintf(file, "%02X ", packet->muid[i]);
+    }
+    fprintf(file, "\n");
+
+    fprintf(file, "Topic: %02X\n", packet->topic);
+    fprintf(file, "Duck Type: %02X\n", packet->duckType);
+    fprintf(file, "Hop Count: %02X\n", packet->hopCount);
+    fprintf(file, "DCRC: %02X\n", packet->dcrc);
+
+    fprintf(file, "Data: ");
+    for (size_t i = 0; i < packet->dataLength; ++i) {
+        fprintf(file, "%02X ", packet->data[i]);
+    }
+    fprintf(file, "\n");
+
+    fclose(file);
+}
+void processHexPacket(const char *input, unsigned char *output, int *outputLen) {
+    int i = 0, j = 0;
+    char temp[3] = {0}; // Temporary buffer to hold a hex pair
+
+    while (input[i] != '\0') {
+        if (isspace(input[i])) {
+            i++;
+            continue;
+        }
+
+        // Copy the next two characters as a hex pair
+        temp[0] = input[i++];
+        temp[1] = input[i++];
+
+        // Convert the hex pair to an integer
+        output[j++] = (unsigned char)strtol(temp, NULL, 16);
+    }
+
+    *outputLen = j;
+}
+
+

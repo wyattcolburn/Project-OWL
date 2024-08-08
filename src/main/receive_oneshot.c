@@ -173,7 +173,7 @@ uint8_t read_registers(uint16_t reg_addr, uint8_t* data, uint8_t len){
 	return status;
 }
 
-void rx_mode_attempt(char * rx_pkt){
+void rx_mode_attempt(uint8_t * rx_pkt){
 	int len = 100;
 
 	set_standby_mode();
@@ -197,8 +197,8 @@ void rx_mode_attempt(char * rx_pkt){
 	/*uint8_t rx_pkt[256];*/
 
 	get_rx_buffer_status(&payload_len, &rx_buff_st_addr);
-	printf("payload len  ");
-	printf("%d\n", payload_len);
+	/*printf("payload len  ");*/
+	/*printf("%d\n", payload_len);*/
 	read_buffer(rx_buff_st_addr, (uint8_t *)rx_pkt, payload_len);
 	
 	clear_irq_status(CLEAR_ALL_IRQ);

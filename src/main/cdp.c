@@ -28,7 +28,7 @@ void initCdpPacket(CdpPacket *packet) {
     uint64_t sduid = SDUID;
     uint64_t dduid = DDUID;
     uint32_t muid = MUID;
-
+	
     memcpy(packet->sduid, &sduid, DUID_LENGTH);
     memcpy(packet->dduid, &dduid, DUID_LENGTH);
     memcpy(packet->muid, &muid, MUID_LENGTH);
@@ -38,39 +38,97 @@ void initCdpPacket(CdpPacket *packet) {
     packet->dcrc = DCRC;
     packet->dataLength = 0;
     memset(packet->data, 0, MAX_DATA_LENGTH);
+
 }
+
+
+
+
+/*void generate_cdp(uint8_t *cdpBuffer, const uint8_t *dataBuffer, size_t dataLength) {*/
+    /*// Ensure data length does not exceed max data length*/
+    /*if (dataLength > MAX_DATA_LENGTH) {*/
+        /*dataLength = MAX_DATA_LENGTH;*/
+    /*}*/
+	/*puts("hello");*/
+	/*printf("%s", dataBuffer);*/
+    /*// Copy default values into the buffer*/
+    /*uint64_t sduid = SDUID;*/
+    /*uint64_t dduid = DDUID;*/
+    /*uint32_t muid = MUID;*/
+    /*uint8_t topic = T;*/
+    /*uint8_t duckType = DT;*/
+    /*uint8_t hopCount = HC;*/
+    /*uint32_t dcrc = DCRC;*/
+
+/*puts("hello world");*/
+	/*printf("sduid%X\n", sduid);*/
+	/*printf("dduid%X\n", dduid);*/
+	/*printf("muid%X\n", muid);*/
+
+
+
+    /*memcpy(&cdpBuffer[SDUID_POS], &sduid, DUID_LENGTH);*/
+    /*memcpy(&cdpBuffer[DDUID_POS], &dduid, DUID_LENGTH);*/
+    /*memcpy(&cdpBuffer[MUID_POS], &muid, MUID_LENGTH);*/
+    /*cdpBuffer[TOPIC_POS] = topic;*/
+    /*cdpBuffer[DUCK_TYPE_POS] = duckType;*/
+    /*cdpBuffer[HOP_COUNT_POS] = hopCount;*/
+    /*memcpy(&cdpBuffer[DATA_CRC_POS], &dcrc, DATA_CRC_LENGTH);*/
+
+    /*// Copy the data into the buffer*/
+    /*memcpy(&cdpBuffer[DATA_POS], dataBuffer, dataLength);*/
+	 /*printf("Size of myInt: %zu bytes\n", sizeof(cdpBuffer));*/
+/*}*/
+
+
+
+
+
 void generate_cdp(uint8_t *cdpBuffer, const uint8_t *dataBuffer, size_t dataLength) {
-    // Ensure data length does not exceed max data length
-    if (dataLength > MAX_DATA_LENGTH) {
-        dataLength = MAX_DATA_LENGTH;
-    }
+	// Ensure data length does not exceed max data length
+	if (dataLength > MAX_DATA_LENGTH) {
+		dataLength = MAX_DATA_LENGTH;
+	}
 	puts("hello");
 	printf("%s", dataBuffer);
-    // Copy default values into the buffer
-    uint64_t sduid = SDUID;
-    uint64_t dduid = DDUID;
-    uint32_t muid = MUID;
-    uint8_t topic = T;
-    uint8_t duckType = DT;
-    uint8_t hopCount = HC;
-    uint32_t dcrc = DCRC;
+	// Copy default values into the buffer
+	uint64_t sduid = SDUID;
+	uint64_t dduid = DDUID;
+	uint32_t muid = MUID;
+	uint8_t topic = T;
+	uint8_t duckType = DT;
+	uint8_t hopCount = HC;
+	uint32_t dcrc = DCRC;
 
-    memcpy(&cdpBuffer[SDUID_POS], &sduid, DUID_LENGTH);
-    memcpy(&cdpBuffer[DDUID_POS], &dduid, DUID_LENGTH);
-    memcpy(&cdpBuffer[MUID_POS], &muid, MUID_LENGTH);
-    cdpBuffer[TOPIC_POS] = topic;
-    cdpBuffer[DUCK_TYPE_POS] = duckType;
-    cdpBuffer[HOP_COUNT_POS] = hopCount;
-    memcpy(&cdpBuffer[DATA_CRC_POS], &dcrc, DATA_CRC_LENGTH);
+puts("hello world");
+	printf("sduid%X\n", sduid);
+	printf("dduid%X\n", dduid);
+	printf("muid%X\n", muid);
 
-    // Copy the data into the buffer
-    memcpy(&cdpBuffer[DATA_POS], dataBuffer, dataLength);
+
+
+	reverse_bytes(&cdpBuffer[SDUID_POS], &sduid, DUID_LENGTH);
+	reverse_bytes(&cdpBuffer[DDUID_POS], &dduid, DUID_LENGTH);
+	reverse_bytes(&cdpBuffer[MUID_POS], &muid, MUID_LENGTH);
+	cdpBuffer[TOPIC_POS] = topic;
+	cdpBuffer[DUCK_TYPE_POS] = duckType;
+	cdpBuffer[HOP_COUNT_POS] = hopCount;
+	reverse_bytes(&cdpBuffer[DATA_CRC_POS], &dcrc, DATA_CRC_LENGTH);
+
+	// Copy the data into the buffer
+	memcpy(&cdpBuffer[DATA_POS], dataBuffer, dataLength);
 	 printf("Size of myInt: %zu bytes\n", sizeof(cdpBuffer));
 }
 void resetCdpPacket(CdpPacket *packet) {
     initCdpPacket(packet);
 }
-void decode_cdp(uint8_t *cdpBuffer, size_t bufferLength, CdpPacket * packet){
+
+void reverse_bytes(uint8_t* dest, const void* src, size_t size) {
+    const uint8_t* src_bytes = (const uint8_t*)src;
+    for (size_t i = 0; i < size; i++) {
+        dest[i] = src_bytes[size - 1 - i];
+    }
+}void decode_cdp(uint8_t *cdpBuffer, size_t bufferLength, CdpPacket * packet){
 
 	if (bufferLength < HEADER_LENGTH) {
 		puts("receive message has no data");

@@ -5,13 +5,13 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#define SDUID 0x00000000 //Src addr 8 byte array
-#define DDUID 0x00000001 //Dest addr 8 byte array
-#define MUID 0x0000    //Message unique ID 4 byte array
-#define T 0x0 //Topic 1 byte 
-#define DT 0x0 //Duck type 1 byte
-#define HC 0x0 //hop count 1 byte
-#define DCRC 0x0000 //Data section CRC
+#define SDUID 0x1234567891011123
+#define DDUID 0x2019181716151413 //Dest addr 8 byte array
+#define MUID 0x12345678    //Message unique ID 4 byte array
+#define T 0x12 //Topic 1 byte 
+#define DT 0x21//Duck type 1 byte
+#define HC 0x99 //hop count 1 byte
+#define DCRC 0x98765432 //Data section CRC
 
 // Field/section length (in bytes)
 #define PACKET_LENGTH 256
@@ -50,5 +50,5 @@ void initCdpPacket(CdpPacket * packet);
 void generate_cdp(uint8_t *cdpBuffer, const uint8_t *dataBuffer, size_t dataLength);
 void resetCdpPacket(CdpPacket *packet);
 void decode_cdp(uint8_t *cdpBuffer, size_t bufferLength, CdpPacket * packet);
-
+void reverse_bytes(uint8_t*dest, const void*src, size_t size);
 #endif

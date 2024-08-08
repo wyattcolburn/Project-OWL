@@ -47,10 +47,9 @@ int main(){
     generate_cdp(cdpBuffer, (const uint8_t *)buffer, size);
 
     printf("Formatted Buffer: ");
-    for (int i = 0; i < HEADER_LENGTH + size; i++) {
+    for (int i = 0; i < cdpBuffer_len; i++) {
         printf("%02X ", cdpBuffer[i]);
     }
-	puts("hi");
 	send_packet(cdpBuffer, cdpBuffer_len);
 	puts("5");
 	return 0;
