@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include "transmit.h"
+#include "sx1262.h"
 #include "cdp.h"
 #include <ctype.h>
 int chip_handle = 0;
@@ -20,39 +20,23 @@ chip_handle = lgpio_init();
         return 1;
     }
 	factoryReset();
-	puts("reset");
+	
 	CdpPacket packet;
-	puts("init cdp packet");
 
 	initCdpPacket(&packet);
-puts("clear cdp packet");
 	uint8_t rx_pkt[229] = {};
 
 	rx_mode_attempt(rx_pkt);
 	printf("message received\n");
 
 	int payload_len = sizeof(rx_pkt);
-	printf("printing packet\n");
-	for(int i = 0; i < payload_len; i++)
-	{
-	printf("%c", rx_pkt[i]);
-	}
-
-	printf("\n");
 
 	unsigned char processedData[sizeof(rx_pkt)/2];
 	int processedDataLen;
 
 	processHexPacket((char *)rx_pkt, processedData, &processedDataLen);
 	
-	/*remove_spaces(rx_pkt);*/
-
-	/*printf("First 8 bytes: \n");*/
-    /*for (int i = 0; i < sizeof(rx_pkt); i++) {*/
-        /*printf("%c", rx_pkt[i]);*/
-    /*}*/
-    /*printf("\n");*/
-	 printf("Processed Data:\n");
+	printf("Processed Data:\n");
     for (int i = 0; i < processedDataLen; i++) {
         printf("%02X", processedData[i]);
     }
@@ -104,7 +88,7 @@ void printCdpPacket(const CdpPacket *packet) {
 
     printf("Data: ");
     for (size_t i = 0; i < packet->dataLength ; ++i) {
-        printf("%02X ", packet->data[i]);
+        printf("%c", packet->data[i]);
     }
     printf("\n");
 }
@@ -141,7 +125,7 @@ void writeCdpPacket(const CdpPacket *packet) {
 
     fprintf(file, "Data: ");
     for (size_t i = 0; i < packet->dataLength; ++i) {
-        fprintf(file, "%02X ", packet->data[i]);
+        fprintf(file, "%c", packet->data[i]);
     }
     fprintf(file, "\n");
 

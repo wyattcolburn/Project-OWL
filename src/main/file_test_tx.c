@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include "transmit.h"
+#include "sx1262.h"
 #include "cdp.h"
 
 char* readFile(const char *filename, size_t *size);
@@ -30,9 +30,7 @@ int main(){
         printf("SPI port failed to open: error code %d\n", spi_handle);
         return 1;
     }
-	puts("start cdp stuff");
-	int cdpBuffer_len = size + 27;
-	puts("1");
+	int cdpBuffer_len = size + HEADER_LENGTH;
 	// Allocate memory for cdpBuffer
     uint8_t *cdpBuffer = (uint8_t *)malloc(cdpBuffer_len);
     if (cdpBuffer == NULL) {
@@ -41,17 +39,10 @@ int main(){
         return 1;
     }
     
-    puts("2");
     buffer_init(cdpBuffer, cdpBuffer_len);
-    puts("3");
     generate_cdp(cdpBuffer, (const uint8_t *)buffer, size);
 
-    printf("Formatted Buffer: ");
-    for (int i = 0; i < cdpBuffer_len; i++) {
-        printf("%02X ", cdpBuffer[i]);
-    }
 	send_packet(cdpBuffer, cdpBuffer_len);
-	puts("5");
 	return 0;
 }
 

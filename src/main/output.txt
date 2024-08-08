@@ -1,9 +1,9 @@
 
-SDUID: 50 41 50 41 30 30 30 31 
-DDUID: 4D 41 4D 41 30 30 30 33 
-MUID: 41 44 42 33 
-Topic: 10
-Duck Type: 02
-Hop Count: 00
-DCRC: 367CE5AC
-Data: 54 65 73 74 20 44 61 74 61 20 53 74 72 69 6E 67 
+SDUID: 12 34 56 78 91 01 11 23 
+DDUID: 20 19 18 17 16 15 14 13 
+MUID: 12 34 56 78 
+Topic: 12
+Duck Type: 21
+Hop Count: 99
+DCRC: 32547698
+Data: Hello World does this work

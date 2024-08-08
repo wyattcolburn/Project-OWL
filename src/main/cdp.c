@@ -43,54 +43,11 @@ void initCdpPacket(CdpPacket *packet) {
 
 
 
-
-/*void generate_cdp(uint8_t *cdpBuffer, const uint8_t *dataBuffer, size_t dataLength) {*/
-    /*// Ensure data length does not exceed max data length*/
-    /*if (dataLength > MAX_DATA_LENGTH) {*/
-        /*dataLength = MAX_DATA_LENGTH;*/
-    /*}*/
-	/*puts("hello");*/
-	/*printf("%s", dataBuffer);*/
-    /*// Copy default values into the buffer*/
-    /*uint64_t sduid = SDUID;*/
-    /*uint64_t dduid = DDUID;*/
-    /*uint32_t muid = MUID;*/
-    /*uint8_t topic = T;*/
-    /*uint8_t duckType = DT;*/
-    /*uint8_t hopCount = HC;*/
-    /*uint32_t dcrc = DCRC;*/
-
-/*puts("hello world");*/
-	/*printf("sduid%X\n", sduid);*/
-	/*printf("dduid%X\n", dduid);*/
-	/*printf("muid%X\n", muid);*/
-
-
-
-    /*memcpy(&cdpBuffer[SDUID_POS], &sduid, DUID_LENGTH);*/
-    /*memcpy(&cdpBuffer[DDUID_POS], &dduid, DUID_LENGTH);*/
-    /*memcpy(&cdpBuffer[MUID_POS], &muid, MUID_LENGTH);*/
-    /*cdpBuffer[TOPIC_POS] = topic;*/
-    /*cdpBuffer[DUCK_TYPE_POS] = duckType;*/
-    /*cdpBuffer[HOP_COUNT_POS] = hopCount;*/
-    /*memcpy(&cdpBuffer[DATA_CRC_POS], &dcrc, DATA_CRC_LENGTH);*/
-
-    /*// Copy the data into the buffer*/
-    /*memcpy(&cdpBuffer[DATA_POS], dataBuffer, dataLength);*/
-	 /*printf("Size of myInt: %zu bytes\n", sizeof(cdpBuffer));*/
-/*}*/
-
-
-
-
-
 void generate_cdp(uint8_t *cdpBuffer, const uint8_t *dataBuffer, size_t dataLength) {
 	// Ensure data length does not exceed max data length
 	if (dataLength > MAX_DATA_LENGTH) {
 		dataLength = MAX_DATA_LENGTH;
 	}
-	puts("hello");
-	printf("%s", dataBuffer);
 	// Copy default values into the buffer
 	uint64_t sduid = SDUID;
 	uint64_t dduid = DDUID;
@@ -99,13 +56,6 @@ void generate_cdp(uint8_t *cdpBuffer, const uint8_t *dataBuffer, size_t dataLeng
 	uint8_t duckType = DT;
 	uint8_t hopCount = HC;
 	uint32_t dcrc = DCRC;
-
-puts("hello world");
-	printf("sduid%X\n", sduid);
-	printf("dduid%X\n", dduid);
-	printf("muid%X\n", muid);
-
-
 
 	reverse_bytes(&cdpBuffer[SDUID_POS], &sduid, DUID_LENGTH);
 	reverse_bytes(&cdpBuffer[DDUID_POS], &dduid, DUID_LENGTH);
@@ -117,7 +67,6 @@ puts("hello world");
 
 	// Copy the data into the buffer
 	memcpy(&cdpBuffer[DATA_POS], dataBuffer, dataLength);
-	 printf("Size of myInt: %zu bytes\n", sizeof(cdpBuffer));
 }
 void resetCdpPacket(CdpPacket *packet) {
     initCdpPacket(packet);
