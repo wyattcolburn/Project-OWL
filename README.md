@@ -18,6 +18,37 @@ bash install.sh
  ```
  ./spi_loopback_test
 ```
+### File Transfer Test
+To simulate the message broker, first the receive and transmit functionality will be tested using files to read messages and write messages. 
+This is done in main. Two sx1262 are required, a wiring diagram is linked below, one will run file_test_rx.c and one will run file_test_tx.c. 
+The two .txt files simulate the webserver, with input.txt being the user input (transmitted message) and output.txt being what is sent to the user interface (received message). 
+
+```
+cd Project-OWL
+cd src
+cd main
+```
+### First Run file_test_rx.c in order to not have to worry about missing the transmission.The program will receive a LoRa packet, decode the CDP packet, and write to output.txt
+```
+./writeFile
+```
+### The run file_test_tx.c to transmit. The program will read the contents of input.txt, generate a CDP packet and then transmit. 
+```
+./readFile
+```
+## Editing files
+If you wish to transmit a different message: change the input.txt file. 
+If you wish to change the wiring, edit sx1262.h
+If you wish to change LORA paramaters, edit sx1262.h
+
+After making changes compile the code with the following commands: the first for tx, and the second for rx portion.
+```
+gcc file_test_tx.c helpFunctions.c cdp.c sx1262.c -o readFile -llgpio
+```
+```
+gcc file_test_rx.c helpFunctions.c cdp.c sx1262.c -o writeFile -llgpio
+```
+
 ### Running Example Code 
 #### RX
 Naviagate to the rx directory

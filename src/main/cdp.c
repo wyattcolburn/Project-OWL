@@ -67,7 +67,7 @@ void generate_cdp(uint8_t *cdpBuffer, const uint8_t *dataBuffer, size_t dataLeng
 
 	// Copy the data into the buffer
 	memcpy(&cdpBuffer[DATA_POS], dataBuffer, dataLength);
-}
+	}
 void resetCdpPacket(CdpPacket *packet) {
     initCdpPacket(packet);
 }

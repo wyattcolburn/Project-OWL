@@ -8,7 +8,7 @@ int chip_handle = 0;
 int spi_handle = 0;
 
 int main(){
-	const char *filename = "example.txt";
+	const char *filename = "input.txt";
     size_t size;
     char *buffer;
 	
@@ -41,7 +41,10 @@ int main(){
     
     buffer_init(cdpBuffer, cdpBuffer_len);
     generate_cdp(cdpBuffer, (const uint8_t *)buffer, size);
-
+	printf("Formatted Buffer: ");
+    for (int i = 0; i < cdpBuffer_len; i++) {
+        printf("%02X ", cdpBuffer[i]);
+    }
 	send_packet(cdpBuffer, cdpBuffer_len);
 	return 0;
 }

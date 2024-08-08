@@ -166,7 +166,7 @@ void rx_mode_attempt(uint8_t * rx_pkt){
 	set_packet_type(LORA_PKT_TYPE);
 	set_rf_frequency(915000000);
 	set_buffer_base_addr(0x00, 0x00);
-	config_modulation_params(LORA_SF_12, LORA_BW_500, LORA_CR_4_5, 0) ;
+	config_modulation_params(LORA_SF_12, LORA_BW_250, LORA_CR_4_5, 0) ;
 	config_packet_params(12, PKT_EXPLICIT_HDR, len, PKT_CRC_OFF, STD_IQ_SETUP);
 
 	set_dio_irq_params(0xFFFF, RX_DONE_MASK, 0x0000, 0x0000); //sets dio1 as tx
@@ -275,8 +275,8 @@ void tx_config(uint16_t payload_len){
 	set_packet_type(LORA_PKT_TYPE);
 	set_rf_frequency(RF_FREQ);
 	set_tx_params(0, SET_RAMP_3400U);
-	config_modulation_params(LORA_SF_12, LORA_BW_250, LORA_CR_4_5, 0);
-	config_packet_params(12, PKT_EXPLICIT_HDR, payload_len, PKT_CRC_OFF, STD_IQ_SETUP);
+	config_modulation_params(LORA_SF, LORA_BW, LORA_CR, LORA_LCR);
+	config_packet_params(12, LORA_HEADER, payload_len, LORA_PKT_CRC, LORA_IQ_SETUP);
 
 
 }

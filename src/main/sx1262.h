@@ -1,16 +1,29 @@
 #include <stdio.h>
 #include <stdint.h>
+#include "sx1262x_defs_custom.h"
 #ifndef spi_loopback_h
 #define spi_loopback_h
+
+
+//wiring PIN INFO
 
 #define BUSY_PIN 16 //J1 Header, pin 4
 #define SX_NRESET_PIN 26 //J4 Header, pin 1
 #define DIO_PIN 6 //using for tx and rx done 
-				  //J1 pin 6
 #define CS_PIN 5 //J1 pin 8
 #define ANT_SW 25 //J2 pin 1
+//LORA Params
 
 #define RF_FREQ 915000000
+#define LORA_SF LORA_SF_12
+#define LORA_BW LORA_BW_250
+#define LORA_CR LORA_CR_4_5
+#define LORA_LCR 0 //low code rate
+#define LORA_HEADER PKT_EXPLICIT_HDR
+#define LORA_PKT_CRC PKT_CRC_OFF
+#define LORA_IQ_SETUP STD_IQ_SETUP
+
+
 #define LOW 0
 #define HIGH 1
 
