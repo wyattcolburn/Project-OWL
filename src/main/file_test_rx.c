@@ -31,6 +31,11 @@ chip_handle = lgpio_init();
 
 	int payload_len = sizeof(rx_pkt);
 
+	printf("Unprocessed data");
+	for (int i = 0; i < payload_len; i++){
+		printf("%02X ", rx_pkt[i]);
+	}
+
 	unsigned char processedData[sizeof(rx_pkt)/2];
 	int processedDataLen;
 

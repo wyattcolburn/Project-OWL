@@ -1,13 +1,12 @@
 #include <stdio.h>
 #include <lgpio.h>
 #include <math.h>
-#include "sx1262.h"
+#include "transmit.h"
 #include "sx1262x_defs_custom.h"
 #include "helpFunctions.h"
 #include "string.h"
-#define GET_STATUS_OP                   UINT8_C(0xC0)
-#define GET_STATS_OP                    UINT8_C(0x10)
-#define GET_RST_STATS_OP                UINT8_C(0x00)
+#include <hiredis/hiredis.h>
+
 /*Pin Connections:*/
 
 /*LoRa Shield -> Raspberry Pi*/
@@ -37,12 +36,126 @@
 	/*A6 6*/
 int enterMessage(char *messageBuffer);
 uint16_t count_characters(const char *input);
+redisContext * redis_init(char * server, int port);
+void subscribe_to_channel(redisContext *c, const char *channel);
+void publish_message(redisContext *c, const char *channel, const char *message);
 // Function prototypes
-extern int chip_handle;
-extern int spi_handle;
+int chip_handle = 0;
+int spi_handle = 0;
 
 uint8_t rx_done_flag = 0;
 
+int main(int argc, char *argv[]) {
+    
+	puts("start");
+    //gpio init
+	chip_handle = lgpio_init();
+	gpio_init(chip_handle);
+	//put GPIO 26 as output for NSS-Reset(needs to be high)
+    // Open the SPI device, spi_handle is a handle
+    spi_handle = spiHandle(0, 0, 5000000, 0);
+    if (spi_handle < 0) {
+        printf("SPI port failed to open: error code %d\n", spi_handle);
+        return 1;
+    }
+	
+	factoryReset();
+	wait_on_busy(); //so waiting for standby mode
+    redisContext *sub_conn = redis_init("127.0.0.1", 6379);
+    redisContext *pub_conn = redis_init("127.0.0.1", 6379);
+
+	subscribe_to_channel(sub_conn, "txchannel");
+
+    // Publish a message to the channel
+    publish_message(pub_conn, "rxchannel", "Message to publisher");
+
+    // Free the Redis connections when done
+    /*redisFree(sub_conn);*/
+    /*redisFree(pub_conn);*/
+	
+	/*redisContext * c = redis_init("127.0.0.1", 6379);*/
+	/*const char *rx_channel = "rxchannel";*/
+	/*const char *message = "message to publisher";*/
+
+	/*redisReply *reply = redisCommand(c, "PUBLISH %s %s", rx_channel, message);*/
+	/*printf("Message published, subscribers received: %lld\n", reply->integer);*/
+	
+	/*freeReplyObject(reply);*/
+
+	char messageBuff[100];
+
+	//user has provided a message
+	if (argc < 2) {
+		printf("Usage: %s <message>\n", argv[0]);
+		return 1;
+	}
+
+	// Copy the message to the buffer
+    strncpy(messageBuff, argv[1], sizeof(messageBuff) - 1);
+    messageBuff[sizeof(messageBuff) - 1] = '\0'; // Ensure null-termination
+		
+
+	//function that will take from buffer -->
+	send_packet((uint8_t *)messageBuff, count_characters(messageBuff)+ 1);	
+
+	int dio_status = gpio_status(chip_handle, DIO_PIN);
+	(dio_status ==  0) ? puts("tx done") : puts("tx error");
+
+	int closeStatus = lgSpiClose(spi_handle);
+    if (closeStatus < 0) {
+        printf("Failed to close SPI device: error code %d\n", closeStatus);
+        return 1;
+    }
+    printf("SPI device closed successfully\n");
+
+    return 0;
+}
+void subscribe_to_channel(redisContext *c, const char *channel) {
+	puts("listenting");
+    redisReply *reply = redisCommand(c, "SUBSCRIBE %s", channel);
+    freeReplyObject(reply);
+
+    while (redisGetReply(c, (void**)&reply) == REDIS_OK) {
+        if (reply->type == REDIS_REPLY_ARRAY && reply->elements == 3) {
+            if (strcmp(reply->element[0]->str, "message") == 0) {
+                printf("Received message: %s\n", reply->element[2]->str);
+
+                // Handle the received message
+                send_packet((uint8_t *)reply->element[2]->str, strlen(reply->element[2]->str) + 1);
+            break;
+			}
+        }
+        freeReplyObject(reply);
+    }
+	puts("done listening");
+}
+
+void publish_message(redisContext *c, const char *channel, const char *message) {
+    puts("tx start");
+
+	redisReply *reply = redisCommand(c, "PUBLISH %s %s", channel, message);
+    printf("Message published, subscribers received: %lld\n", reply->integer);
+    freeReplyObject(reply);
+	puts("tx end");
+}
+
+
+redisContext * redis_init(char * server, int port){
+	puts("redis init");
+	redisContext * c = redisConnect(server, port);
+	if ( c == NULL || c->err) {
+		if (c) {
+			printf("Connection error: %s\n", c->errstr);
+		}
+		else {
+			printf("Conenction error:can't allocate redis context\n");
+		}
+		exit(1);
+	}
+	puts("connection established");	
+	puts("end message");
+	return c;
+}
 
 uint16_t count_characters(const char *input) {
     // Use strlen to get the length of the string
@@ -121,6 +234,7 @@ void clear_irq_status(uint16_t status_mask){
 
 
 uint8_t write_registers(uint16_t reg_addr, uint8_t * data, uint8_t len) {
+	puts("writing to register");
 
 	//ISSUES MIGHT ARISE WITH NSS going high and low through multiple spi operations
 	nss_select();
@@ -139,6 +253,7 @@ uint8_t write_registers(uint16_t reg_addr, uint8_t * data, uint8_t len) {
 
 }
 uint8_t read_registers(uint16_t reg_addr, uint8_t* data, uint8_t len){
+	puts("reading registers");
 
 	uint8_t status;
 	uint8_t cmd_addr[3] = {READ_REG_OP, (uint8_t) ((reg_addr >> 8) & (0x00FF)),
@@ -158,72 +273,6 @@ uint8_t read_registers(uint16_t reg_addr, uint8_t* data, uint8_t len){
 	return status;
 }
 
-void rx_mode_attempt(uint8_t * rx_pkt){
-	int len = 255;
-
-	set_standby_mode();
-	print_status_information();
-	set_packet_type(LORA_PKT_TYPE);
-	set_rf_frequency(915000000);
-	set_buffer_base_addr(0x00, 0x00);
-	config_modulation_params(LORA_SF_12, LORA_BW_250, LORA_CR_4_5, 0) ;
-	config_packet_params(12, PKT_EXPLICIT_HDR, len, PKT_CRC_OFF, STD_IQ_SETUP);
-
-	set_dio_irq_params(0xFFFF, RX_DONE_MASK, 0x0000, 0x0000); //sets dio1 as tx
-	set_rx_mode(0x000000); //continous mode
-						   //
-	wait_on_busy();
-	print_status_information();	   
-	wait_on_DIO_IRQ();
-	print_status_information();	   
-	
-	uint8_t payload_len = 0; 
-	uint8_t rx_buff_st_addr = 0;
-	/*uint8_t rx_pkt[256];*/
-
-	get_rx_buffer_status(&payload_len, &rx_buff_st_addr);
-	/*printf("payload len  ");*/
-	/*printf("%d\n", payload_len);*/
-	read_buffer(rx_buff_st_addr, (uint8_t *)rx_pkt, payload_len);
-	
-	clear_irq_status(CLEAR_ALL_IRQ);
-	/*for(int i = 0; i < payload_len; i++)*/
-	/*{*/
-		/*printf("%c", rx_pkt[i]);*/
-	/*}*/
-	printf("\n");
-
-}
-
-void set_rx_mode(uint32_t timeout) {
-
-	ant_sw_on();
-
-	SLEEP_MS(100);
-	uint8_t rx_gain = RX_GAIN_PWR_SAVING;
-	write_registers(REG_RX_GAIN, &rx_gain, 1);
-	wait_on_busy();
-	uint8_t readRegVal;
-	read_registers(REG_RX_GAIN, &readRegVal, 1);
-	printf("0x%02X\n", readRegVal);
-	uint8_t timeout_buff[3];
-	timeout_buff[0] = (uint8_t) (timeout >> 16) & 0xFF;
-    timeout_buff[1] = (uint8_t) (timeout >> 8) & 0xFF;
-    timeout_buff[2] = (uint8_t) timeout & 0xFF;
-
-	sendCommand(spi_handle, SET_RX_MODE_OP, timeout_buff, 3);
-
-}
-
-void get_rx_buffer_status(uint8_t* payload_len, uint8_t* rx_start_buff_addr) {
-
-	uint8_t rx_status[2];
-
-	getCommand(spi_handle, GET_RX_BUFF_STATUS_OP, rx_status, 2);
-
-	*payload_len = rx_status[0];
-	*rx_start_buff_addr = rx_status[1];
-}
 void tx_mode_attempt(uint8_t* data, uint16_t len) {
 	puts("start of function");
 	set_standby_mode();
@@ -275,8 +324,8 @@ void tx_config(uint16_t payload_len){
 	set_packet_type(LORA_PKT_TYPE);
 	set_rf_frequency(RF_FREQ);
 	set_tx_params(0, SET_RAMP_3400U);
-	config_modulation_params(LORA_SF, LORA_BW, LORA_CR, LORA_LCR);
-	config_packet_params(12, LORA_HEADER, payload_len, LORA_PKT_CRC, LORA_IQ_SETUP);
+	config_modulation_params(LORA_SF_12, LORA_BW_250, LORA_CR_4_5, 0);
+	config_packet_params(12, PKT_EXPLICIT_HDR, payload_len, PKT_CRC_OFF, STD_IQ_SETUP);
 
 
 }
@@ -284,25 +333,32 @@ void tx_config(uint16_t payload_len){
 
 void send_packet(uint8_t* data, uint16_t data_len) {
 
+// Print the message from the buffer
+    printf("\n\n buffer message:\n");
+	printf("Message: %s\n", data);
 
+	printf("%d", sizeof(data));
 	set_buffer_base_addr(0x00, 0x00); //does this order matter
 	write_buffer(0x00, data, data_len);
 	puts("pre dio irq params set");
 	set_dio_irq_params(0xFFFF, TX_DONE_MASK, 0x0000, RX_DONE_MASK); //setup tx done irq
+	puts("post dio");
 																	
 	tx_config(data_len);
+	puts("pre tx");
 	
 	print_status_information();
 	set_tx_mode(0x00); //this is the command to start tx
+	puts("post tx");
 	print_status_information();
 
 	wait_on_DIO_IRQ();
 	clear_irq_status(CLEAR_ALL_IRQ);
 	//need to clear IRQ
-	int dio = gpio_status(chip_handle, DIO_PIN);
+int dio = gpio_status(chip_handle, DIO_PIN);
 	printf("DIO\n");
 	printf("%d\n", dio);
-
+	return;
  }
 
 //tx functions

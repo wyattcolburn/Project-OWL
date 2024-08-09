@@ -23,6 +23,7 @@ int main(){
 
 	chip_handle = lgpio_init();
 	gpio_init(chip_handle);
+	factoryReset();
 	//put GPIO 26 as output for NSS-Reset(needs to be high)
     // Open the SPI device, spi_handle is a handle
     spi_handle = spiHandle(0, 0, 5000000, 0);
