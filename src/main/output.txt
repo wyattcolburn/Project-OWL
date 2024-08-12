@@ -5,5 +5,4 @@ MUID: 12 34 56 78
 Topic: 12
 Duck Type: 21
 Hop Count: 99
-DCRC: 32547698
-Data: What in the world is happening here
+DCRC: 98 76 54 32 Data: There is a dark day amou.m the world

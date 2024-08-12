@@ -39,7 +39,7 @@ typedef struct {
     uint8_t topic;
     uint8_t duckType;
     uint8_t hopCount;
-    uint32_t dcrc;
+    uint8_t dcrc[DATA_CRC_LENGTH];
     uint8_t data[MAX_DATA_LENGTH];
     size_t dataLength;
 } CdpPacket;

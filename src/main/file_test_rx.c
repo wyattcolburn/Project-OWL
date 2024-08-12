@@ -9,6 +9,7 @@ void printCdpPacket(const CdpPacket *packet);
 void remove_spaces(uint8_t *buffer);
 void processHexPacket(const char *input , unsigned char * output, int *outputLen);
 void writeCdpPacket(const CdpPacket *packet);
+uint8_t * trim_trailing_zeros(const unsigned char* buffer, size_t len, size_t* new_len);
 int main(){
 chip_handle = lgpio_init();
 	gpio_init(chip_handle);
@@ -24,36 +25,60 @@ chip_handle = lgpio_init();
 	CdpPacket packet;
 
 	initCdpPacket(&packet);
-	uint8_t rx_pkt[229] = {};
+	uint8_t rx_pkt[255] = {};
 
 	rx_mode_attempt(rx_pkt);
 	printf("message received\n");
 
 	int payload_len = sizeof(rx_pkt);
 
-	printf("Unprocessed data");
-	for (int i = 0; i < payload_len; i++){
-		printf("%02X ", rx_pkt[i]);
-	}
-
-	unsigned char processedData[sizeof(rx_pkt)/2];
-	int processedDataLen;
-
-	processHexPacket((char *)rx_pkt, processedData, &processedDataLen);
+	/*printf("unprocessed data\n");*/
+	/*for (int i = 0; i < payload_len; i++){*/
+		/*printf("%02x ", rx_pkt[i]);*/
+	/*}*/
 	
-	printf("Processed Data:\n");
-    for (int i = 0; i < processedDataLen; i++) {
-        printf("%02X", processedData[i]);
-    }
-    printf("\n");
+	/*printf("data without spaces\n");*/
+	/*for (int i = 0; i < payload_len; i++){*/
+		/*printf("%02X", rx_pkt[i]);*/
+	/*}*/
 
-
-	decode_cdp(processedData, processedDataLen, &packet);
-	
-	
+	size_t filterLen;
+	uint8_t* filterBuffer = trim_trailing_zeros(rx_pkt, payload_len, &filterLen);
+	/*printf("data without trailing spaces\n");*/
+	/*for (int i = 0; i < filterLen; i++){*/
+		/*printf("%02X", filterBuffer[i]);*/
+	/*}*/
+    decode_cdp(filterBuffer, filterLen, &packet);	
 	printCdpPacket(&packet);
 	writeCdpPacket(&packet);
 	return 0;
+}
+
+
+uint8_t * trim_trailing_zeros(const unsigned char* buffer, size_t len, size_t* new_len) {
+    // Find the last non-zero byte
+    ssize_t end = len - 1;
+    while (end >= 0 && buffer[end] == 0) {
+        end--;
+    }
+
+    // If all data is zero, return an empty buffer
+    if (end < 0) {
+        *new_len = 0;
+        return NULL;
+    }
+
+    // Allocate a new buffer to hold the result
+    *new_len = end + 1;
+    unsigned char* result = (unsigned char*)malloc(*new_len);
+    if (result == NULL) {
+        return NULL;  // Handle allocation failure
+    }
+
+    // Copy the meaningful part of the original buffer
+    memcpy(result, buffer, *new_len);
+
+    return result;
 }
 void remove_spaces(uint8_t *buffer) {
     int i, j = 0;
@@ -89,8 +114,12 @@ void printCdpPacket(const CdpPacket *packet) {
     printf("Topic: %02X\n", packet->topic);
     printf("Duck Type: %02X\n", packet->duckType);
     printf("Hop Count: %02X\n", packet->hopCount);
-    printf("DCRC: %02X\n", packet->dcrc);
+    printf("DCRC: " );
 
+	for (int i = 0; i < DATA_CRC_LENGTH; i++) {
+		printf("%02X ", packet->dcrc[i]);
+	}
+	printf("\n");
     printf("Data: ");
     for (size_t i = 0; i < packet->dataLength ; ++i) {
         printf("%c", packet->data[i]);
@@ -126,7 +155,12 @@ void writeCdpPacket(const CdpPacket *packet) {
     fprintf(file, "Topic: %02X\n", packet->topic);
     fprintf(file, "Duck Type: %02X\n", packet->duckType);
     fprintf(file, "Hop Count: %02X\n", packet->hopCount);
-    fprintf(file, "DCRC: %02X\n", packet->dcrc);
+
+
+    fprintf(file, "DCRC: ");
+	for (int i = 0; i < DATA_CRC_LENGTH; i++){
+		fprintf(file, "%02X ", packet->dcrc[i]);
+	}
 
     fprintf(file, "Data: ");
     for (size_t i = 0; i < packet->dataLength; ++i) {

@@ -187,7 +187,9 @@ void rx_mode_attempt(uint8_t * rx_pkt){
 	read_buffer(rx_buff_st_addr, (uint8_t *)rx_pkt, payload_len);
 	
 	clear_irq_status(CLEAR_ALL_IRQ);
-	/*for(int i = 0; i < payload_len; i++)*/
+	/*printf("received packet in full");*/
+
+	/*for(int i = 0; i < len; i++)*/
 	/*{*/
 		/*printf("%c", rx_pkt[i]);*/
 	/*}*/

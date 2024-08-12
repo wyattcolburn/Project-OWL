@@ -28,14 +28,15 @@ void initCdpPacket(CdpPacket *packet) {
     uint64_t sduid = SDUID;
     uint64_t dduid = DDUID;
     uint32_t muid = MUID;
-	
+	uint32_t dcrc = DCRC;
+
     memcpy(packet->sduid, &sduid, DUID_LENGTH);
     memcpy(packet->dduid, &dduid, DUID_LENGTH);
     memcpy(packet->muid, &muid, MUID_LENGTH);
     packet->topic = T;
     packet->duckType = DT;
     packet->hopCount = HC; 
-    packet->dcrc = DCRC;
+    memcpy(packet->dcrc, &dcrc, DATA_CRC_LENGTH); 
     packet->dataLength = 0;
     memset(packet->data, 0, MAX_DATA_LENGTH);
 
@@ -78,6 +79,11 @@ void reverse_bytes(uint8_t* dest, const void* src, size_t size) {
         dest[i] = src_bytes[size - 1 - i];
     }
 }void decode_cdp(uint8_t *cdpBuffer, size_t bufferLength, CdpPacket * packet){
+	printf("\n\n\n decoding func\n");
+
+	    for (int i = 0; i < bufferLength; i++) {
+        printf("%02X ", cdpBuffer[i]);
+    }
 
 	if (bufferLength < HEADER_LENGTH) {
 		puts("receive message has no data");
@@ -89,7 +95,7 @@ void reverse_bytes(uint8_t* dest, const void* src, size_t size) {
     packet->topic = cdpBuffer[TOPIC_POS];
     packet->duckType = cdpBuffer[DUCK_TYPE_POS];
     packet->hopCount = cdpBuffer[HOP_COUNT_POS];
-    packet->dcrc = *(uint32_t*)&cdpBuffer[DATA_CRC_POS];
+    memcpy(packet->dcrc, &cdpBuffer[DATA_CRC_POS], DATA_CRC_LENGTH);
     packet->dataLength = bufferLength - HEADER_LENGTH;
     memcpy(packet->data, &cdpBuffer[DATA_POS], packet->dataLength);
 }
