@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <lgpio.h>
 #include <math.h>
-#include "../header_files/transmit.h"
+#include "transmit.h"
 #include "helpFunctions.h"
 #include "sx1262x_defs_custom.h"
 #include "../header_files/helpFunctions.h"
@@ -221,7 +221,7 @@ void rx_mode_attempt(){
 	set_packet_type(LORA_PKT_TYPE);
 	set_rf_frequency(915000000);
 	set_buffer_base_addr(0x00, 0x00);
-	config_modulation_params(LORA_SF_12, LORA_BW_500, LORA_CR_4_5, 0) ;
+	config_modulation_params(LORA_SF_12, LORA_BW_250, LORA_CR_4_5, 0) ;
 	config_packet_params(12, PKT_EXPLICIT_HDR, len, PKT_CRC_OFF, STD_IQ_SETUP);
 
 	set_dio_irq_params(0xFFFF, RX_DONE_MASK, 0x0000, 0x0000); //sets dio1 as tx
