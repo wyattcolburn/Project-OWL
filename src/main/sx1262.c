@@ -5,6 +5,8 @@
 #include "sx1262x_defs_custom.h"
 #include "helpFunctions.h"
 #include "string.h"
+#include "main.h"
+#include "redis.h"
 #define GET_STATUS_OP                   UINT8_C(0xC0)
 #define GET_STATS_OP                    UINT8_C(0x10)
 #define GET_RST_STATS_OP                UINT8_C(0x00)
@@ -36,10 +38,9 @@
 	/*A5 5*/
 	/*A6 6*/
 int enterMessage(char *messageBuffer);
+extern const char *queue_name_2;
 uint16_t count_characters(const char *input);
 // Function prototypes
-extern int chip_handle;
-extern int spi_handle;
 
 uint8_t rx_done_flag = 0;
 
@@ -158,7 +159,7 @@ uint8_t read_registers(uint16_t reg_addr, uint8_t* data, uint8_t len){
 	return status;
 }
 
-void rx_mode_attempt(uint8_t * rx_pkt){
+void rx_mode_attempt(){
 	int len = 255;
 
 	set_standby_mode();
@@ -170,31 +171,32 @@ void rx_mode_attempt(uint8_t * rx_pkt){
 	config_packet_params(12, PKT_EXPLICIT_HDR, len, PKT_CRC_OFF, STD_IQ_SETUP);
 
 	set_dio_irq_params(0xFFFF, RX_DONE_MASK, 0x0000, 0x0000); //sets dio1 as tx
-	set_rx_mode(0x000000); //continous mode
+	set_rx_mode(0xFFFFFF); //continous mode
 						   //
 	wait_on_busy();
 	print_status_information();	   
-	wait_on_DIO_IRQ();
+	
 	print_status_information();	   
-	
-	uint8_t payload_len = 0; 
-	uint8_t rx_buff_st_addr = 0;
-	/*uint8_t rx_pkt[256];*/
+	while (tx_mode_flag == 0) { //in receive mode
+		wait_on_DIO_IRQ();			//
+		uint8_t payload_len = 0; 
+		uint8_t rx_buff_st_addr = 0;
+		uint8_t rx_pkt[256];
+		
+		memset(rx_pkt, 0, 256);
+		clear_buffer();
+		get_rx_buffer_status(&payload_len, &rx_buff_st_addr);
+		read_buffer(rx_buff_st_addr, rx_pkt, payload_len);
+		
+		clear_irq_status(CLEAR_ALL_IRQ);
+		clear_irq_status(CLEAR_ALL_IRQ);
 
-	get_rx_buffer_status(&payload_len, &rx_buff_st_addr);
-	/*printf("payload len  ");*/
-	/*printf("%d\n", payload_len);*/
-	read_buffer(rx_buff_st_addr, (uint8_t *)rx_pkt, payload_len);
-	
-	clear_irq_status(CLEAR_ALL_IRQ);
-	/*printf("received packet in full");*/
-
-	/*for(int i = 0; i < len; i++)*/
-	/*{*/
-		/*printf("%c", rx_pkt[i]);*/
-	/*}*/
+		/*enqueue_task(b, queue_name_2,(char *) rx_pkt);*/
+			
+		/*[>printf("received packet in full");<]*/
+	/*print_queue(b, queue_name_2);*/
 	printf("\n");
-
+	}
 }
 
 void set_rx_mode(uint32_t timeout) {
@@ -286,7 +288,7 @@ void tx_config(uint16_t payload_len){
 
 void send_packet(uint8_t* data, uint16_t data_len) {
 
-
+	clear_buffer();
 	set_buffer_base_addr(0x00, 0x00); //does this order matter
 	write_buffer(0x00, data, data_len);
 	puts("pre dio irq params set");
@@ -296,6 +298,7 @@ void send_packet(uint8_t* data, uint16_t data_len) {
 	
 	print_status_information();
 	set_tx_mode(0x00); //this is the command to start tx
+	SLEEP_MS(50); //getting some errors
 	print_status_information();
 
 	wait_on_DIO_IRQ();
@@ -403,6 +406,14 @@ uint8_t write_buffer(uint8_t offset, uint8_t* data, uint16_t len){
 
 	return status;
 }
+
+void clear_buffer(){
+
+	uint8_t clearBuffer[256];
+	memset(clearBuffer,0, 256);
+	set_buffer_base_addr(0,0);
+	write_buffer(0, clearBuffer, 256);
+}
 uint8_t read_buffer(uint8_t offset, uint8_t* data, uint16_t len){
 
 	uint8_t status;
@@ -486,10 +497,11 @@ void wait_on_DIO_IRQ(void){
 	int dioStatus= lgGpioRead(chip_handle, DIO_PIN); 
 	while (dioStatus == LOW) {
 		puts("still low");
-		uint16_t irq_stats = get_irq_status();
-		printf("%d\n", irq_stats);
 		SLEEP_MS(1000);
-		dioStatus= lgGpioRead(chip_handle, DIO_PIN); 
+		dioStatus= lgGpioRead(chip_handle, DIO_PIN);
+		if (tx_mode_flag == 1) {
+			break;
+		}
 	}
 	puts("dio done!");
 }

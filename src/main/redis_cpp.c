@@ -24,11 +24,25 @@ void publish(redisContext *redisConnect, const char *stream_name, const char *ke
         return;
     }
 
-    // Send the command to Redis using argument-based function
-    redisReply *reply = (redisReply *)redisCommand(redisConnect, "XADD %s * %s %s", stream_name, key, value);
+    // Calculate the required command length
+    size_t command_len = 8 + strlen(stream_name) + 1 + strlen(key) + 1 + strlen(value) + 1; // "XADD " + stream name + " * " + key + value + null terminator
+
+    // Allocate memory for the command
+    char *command = (char*)malloc(command_len * sizeof(char));
+    if (!command) {
+        printf("Memory allocation error\n");
+        return;
+    }
+
+    // Build the command string
+    snprintf(command, command_len, "XADD %s * %s %s", stream_name, key, value);
+
+    // Send the command to Redis
+    redisReply *reply = (redisReply *)redisCommand(redisConnect, command);
 
     if (reply == NULL) {
         printf("Command execution error\n");
+        free(command);
         return;
     }
 
@@ -43,14 +57,11 @@ void publish(redisContext *redisConnect, const char *stream_name, const char *ke
         printf("Unexpected reply type: %d\n", reply->type);
     }
 
-    // Free the reply object
+    // Free the reply and command memory
     freeReplyObject(reply);
+    free(command);
 }
-
-
-void read_from_consumer_group2(redisContext *c, const char *stream_name, const char *group_name, const char *consumer_name){
-
-
+void read_from_consumer_group(redisContext *c, const char *stream_name, const char *group_name, const char *consumer_name, char * key_buffer, char *message_buffer, char *messageID) {
     redisReply *reply = (redisReply *)redisCommand(c, "XREADGROUP GROUP %s %s STREAMS %s >", group_name, consumer_name, stream_name);
 
     if (reply == NULL) {
@@ -66,68 +77,33 @@ void read_from_consumer_group2(redisContext *c, const char *stream_name, const c
             for (size_t j = 0; j < messages->elements; j++) {
                 redisReply *message = messages->element[j];
                 printf("Message ID: %s\n", message->element[0]->str);  // Message ID (if you need it)
+				strcat(messageID, message->element[0]->str);
                 redisReply *fields = message->element[1];
+                message_buffer[0] = '\0'; // Clear the buffer before concatenating the message
 
                 // Extract and concatenate key-value pairs into the message buffer
                 for (size_t k = 0; k < fields->elements; k += 2) {
 
+                    strcat(key_buffer, fields->element[k]->str);
+                    strcat(message_buffer, fields->element[k + 1]->str);
+					/*strcat(message_buffer, fields->element[k]->str);*/
+                    /*strcat(message_buffer, ": ");*/
+                    /*strcat(message_buffer, fields->element[k + 1]->str);*/
                     if (k + 2 < fields->elements) {
+                        strcat(message_buffer, ", ");  // Separate key-value pairs with a comma
                     }
                 }
 
+                printf("Message Content: %s\n", message_buffer);  // Print or use the message content
             }
         }
     } else {
         printf("No messages found.\n");
+		memset(key_buffer, 0, 100);
+		memset(message_buffer, 0,100); 
     }
 
     freeReplyObject(reply);
-}
-
-
-void read_from_consumer_group(redisContext *c, const char *stream_name, const char *group_name, const char *consumer_name, char * key_buffer, char *message_buffer, char *messageID) {
-	redisReply *reply = (redisReply *)redisCommand(c, "XREADGROUP GROUP %s %s STREAMS %s >", group_name, consumer_name, stream_name);
-
-	if (reply == NULL) {
-		printf("Command execution error\n");
-		return;
-	}
-
-	if (reply->type == REDIS_REPLY_ARRAY && reply->elements > 0) {
-		for (size_t i = 0; i < reply->elements; i++) {
-			redisReply *stream = reply->element[i];
-			redisReply *messages = stream->element[1];
-
-			for (size_t j = 0; j < messages->elements; j++) {
-				redisReply *message = messages->element[j];
-				printf("Message ID: %s\n", message->element[0]->str);  // Message ID (if you need it)
-				strcat(messageID, message->element[0]->str);
-				redisReply *fields = message->element[1];
-				message_buffer[0] = '\0'; // Clear the buffer before concatenating the message
-
-				// Extract and concatenate key-value pairs into the message buffer
-				for (size_t k = 0; k < fields->elements; k += 2) {
-
-					strcat(key_buffer, fields->element[k]->str);
-					strcat(message_buffer, fields->element[k + 1]->str);
-					/*strcat(message_buffer, fields->element[k]->str);*/
-					/*strcat(message_buffer, ": ");*/
-					/*strcat(message_buffer, fields->element[k + 1]->str);*/
-					if (k + 2 < fields->elements) {
-						strcat(message_buffer, ", ");  // Separate key-value pairs with a comma
-					}
-				}
-
-				printf("Message Content: %s\n", message_buffer);  // Print or use the message content
-			}
-		}
-	} else {
-		printf("No messages found.\n");
-		memset(key_buffer, 0, 100);
-		memset(message_buffer, 0,100); 
-	}
-
-	freeReplyObject(reply);
 }
 
 
@@ -285,67 +261,3 @@ int queue_len(redisContext *c, const char *queue_name) {
     return length;
 }
 
-int get_and_process_first_pending_message(redisContext *c, const char *stream_name, const char *group_name, const char *consumer_name, char *keyBuffer, char *messageBuffer, char *messageIDBuffer) {
-    // Fetch information about pending messages
-    redisReply *reply = (redisReply *)redisCommand(c, "XPENDING %s %s - + 1", stream_name, group_name);
-
-    if (reply == NULL) {
-        printf("Command execution error\n");
-        return -1;
-    }
-
-    if (reply->type == REDIS_REPLY_ARRAY && reply->elements > 0 && reply->element[0]->elements > 0) {
-        // Get the smallest pending ID
-        const char *smallest_pending_id = reply->element[0]->element[0]->str;
-        printf("Smallest Pending ID: %s\n", smallest_pending_id);
-
-        // Copy the smallest pending ID to the messageIDBuffer
-        strncpy(messageIDBuffer, smallest_pending_id, 100);  // Adjust size as needed
-        messageIDBuffer[99] = '\0'; // Ensure null termination
-
-        // Read the message with the smallest pending ID using XREADGROUP without acknowledging it
-        redisReply *message_reply = (redisReply *)redisCommand(c, "XREADGROUP GROUP %s %s COUNT 1 STREAMS %s %s", group_name, consumer_name, stream_name, smallest_pending_id);
-
-        if (message_reply == NULL) {
-            printf("Failed to read the pending message.\n");
-            freeReplyObject(reply);
-            return -1;
-        }
-
-        if (message_reply->type == REDIS_REPLY_ARRAY && message_reply->elements > 0) {
-            redisReply *message = message_reply->element[0]->element[1];  // The actual message data
-            redisReply *fields = message->element[1];
-
-            // Clear buffers
-            memset(keyBuffer, 0, sizeof(keyBuffer));
-            memset(messageBuffer, 0, sizeof(messageBuffer));
-
-            // Extract key-value pairs
-            for (size_t i = 0; i < fields->elements; i += 2) {
-                if (i == 0) {
-                    strcpy(keyBuffer, fields->element[i]->str);  // Copy the key
-                }
-                strcpy(messageBuffer, fields->element[i + 1]->str);  // Copy the value
-            }
-
-            printf("Message ID: %s\n", messageIDBuffer);
-            printf("Key: %s\n", keyBuffer);
-            printf("Message: %s\n", messageBuffer);
-
-            freeReplyObject(message_reply);
-        } else {
-            printf("No message found with the smallest pending ID.\n");
-            freeReplyObject(message_reply);
-            freeReplyObject(reply);
-            return -1;
-        }
-
-    } else {
-        printf("No pending messages.\n");
-        freeReplyObject(reply);
-        return -1;
-    }
-
-    freeReplyObject(reply);
-    return 0;
-}

@@ -30,7 +30,9 @@
 #define READY 0
 #define BUSY 1
 #define CLEAR_ALL_IRQ 0x03FF
-
+extern int chip_handle;
+extern int spi_handle;
+extern int tx_mode_flag;
 //MARCO for delay_ms 
 #define SLEEP_MS(ms) lguSleep((ms) / 1000.0)
 //function protypes
@@ -61,7 +63,7 @@ uint8_t write_registers(uint16_t reg_addr, uint8_t* data, uint8_t len);
 void factoryReset();
 
 uint8_t write_buffer(uint8_t offset, uint8_t* data, uint16_t len);
-
+void clear_buffer();
 void config_modulation_params(uint8_t spreading_factor, uint8_t bandwidth, uint8_t coding_rate, uint8_t low_data_rate_opt);
 void config_packet_params(uint8_t preamble_length, uint8_t header_type, uint8_t payload_length, uint8_t crc_type, uint8_t invert_iq);
 void set_dio_irq_params(uint16_t irq_mask, uint16_t dio1_mask, uint16_t dio2_mask,
@@ -87,7 +89,7 @@ void tx_mode(void);
 void nss_select(void);
 void nss_deselect(void);
 void set_rx_mode(uint32_t);
-void rx_mode_attempt(uint8_t *rk_pkt);
+void rx_mode_attempt();
 void ant_sw_on();
 void ant_sw_off();
 void wait_on_RX_IRQ();
