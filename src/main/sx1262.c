@@ -177,27 +177,43 @@ void rx_mode_attempt(){
 	print_status_information();	   
 	
 	print_status_information();	   
+	uint8_t payload_len = 0; 
+	uint8_t rx_buff_st_addr = 0;
+	uint8_t rx_pkt[256];
+	
 	while (tx_mode_flag == 0) { //in receive mode
 		wait_on_DIO_IRQ();			//
-		uint8_t payload_len = 0; 
-		uint8_t rx_buff_st_addr = 0;
-		uint8_t rx_pkt[256];
-		
-		memset(rx_pkt, 0, 256);
-		clear_buffer();
+				
 		get_rx_buffer_status(&payload_len, &rx_buff_st_addr);
-		read_buffer(rx_buff_st_addr, rx_pkt, payload_len);
+
+
+		read_buffer(0, rx_pkt, payload_len);
 		
 		clear_irq_status(CLEAR_ALL_IRQ);
 		clear_irq_status(CLEAR_ALL_IRQ);
 
 		/*enqueue_task(b, queue_name_2,(char *) rx_pkt);*/
 			
-		/*[>printf("received packet in full");<]*/
-	/*print_queue(b, queue_name_2);*/
+		printf("received packet in full:\n");
+		for (int i = 0; i < payload_len; i++) {
+			printf("%c", rx_pkt[i]);
+	
+		}
 	printf("\n");
-	}
+
+		printf("payload len: %u", payload_len);
+	printf("\n");
+	clear_buffer();
+	set_buffer_base_addr(0x00, 0x00);
+	memset(rx_pkt, 0, 256);
+	payload_len = 0;
+
+
+
 }
+	/*print_queue(b, queue_name_2);*/
+	}
+
 
 void set_rx_mode(uint32_t timeout) {
 

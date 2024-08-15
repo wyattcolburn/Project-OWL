@@ -97,7 +97,7 @@ void *redis_thread_func(void *ptr) {
 		read_from_consumer_group(c, mystream, groupName, consumer_name, keyBuffer, messageBuffer, messageID);
 		check_pending_messages(c, mystream, groupName);
 		if (keyBuffer[0] == '\0') {
-			printf("No message received key buffer is empty\n");
+			/*printf("No message received key buffer is empty\n");*/
 		}
 		else if(strcmp(keyBuffer, "CDP_LORA") == 0) //if str are equal
 		{

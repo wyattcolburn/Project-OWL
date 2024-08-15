@@ -78,7 +78,7 @@ void read_from_consumer_group2(redisContext *c, const char *stream_name, const c
             }
         }
     } else {
-        printf("No messages found.\n");
+        /*printf("No messages found.\n");*/
     }
 
     freeReplyObject(reply);
@@ -200,10 +200,10 @@ void check_pending_messages(redisContext *c, const char *stream_name, const char
     }
 
     if (reply->type == REDIS_REPLY_ARRAY && reply->elements == 4) {
-        printf("Pending count: %lld\n", reply->element[0]->integer);
-        printf("Smallest Pending ID: %s\n", reply->element[1]->str);
-        printf("Largest Pending ID: %s\n", reply->element[2]->str);
-        printf("Consumers with pending messages: %llu\n", reply->element[3]->elements);
+        /*printf("Pending count: %lld\n", reply->element[0]->integer);*/
+        /*printf("Smallest Pending ID: %s\n", reply->element[1]->str);*/
+        /*printf("Largest Pending ID: %s\n", reply->element[2]->str);*/
+        /*printf("Consumers with pending messages: %llu\n", reply->element[3]->elements);*/
     } else {
         printf("No pending messages.\n");
     }
@@ -297,7 +297,7 @@ int get_and_process_first_pending_message(redisContext *c, const char *stream_na
     if (reply->type == REDIS_REPLY_ARRAY && reply->elements > 0 && reply->element[0]->elements > 0) {
         // Get the smallest pending ID
         const char *smallest_pending_id = reply->element[0]->element[0]->str;
-        printf("Smallest Pending ID: %s\n", smallest_pending_id);
+        /*printf("Smallest Pending ID: %s\n", smallest_pending_id);*/
 
         // Copy the smallest pending ID to the messageIDBuffer
         strncpy(messageIDBuffer, smallest_pending_id, 100);  // Adjust size as needed
