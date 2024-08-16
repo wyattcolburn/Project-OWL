@@ -200,7 +200,7 @@ void check_pending_messages(redisContext *c, const char *stream_name, const char
     }
 
     if (reply->type == REDIS_REPLY_ARRAY && reply->elements == 4) {
-        /*printf("Pending count: %lld\n", reply->element[0]->integer);*/
+        printf("Pending count: %lld\n", reply->element[0]->integer);
         /*printf("Smallest Pending ID: %s\n", reply->element[1]->str);*/
         /*printf("Largest Pending ID: %s\n", reply->element[2]->str);*/
         /*printf("Consumers with pending messages: %llu\n", reply->element[3]->elements);*/

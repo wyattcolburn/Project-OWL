@@ -97,8 +97,22 @@ void *redis_thread_func(void *ptr) {
 		read_from_consumer_group(c, mystream, groupName, consumer_name, keyBuffer, messageBuffer, messageID);
 		check_pending_messages(c, mystream, groupName);
 		if (keyBuffer[0] == '\0') {
-			/*printf("No message received key buffer is empty\n");*/
+			printf("No message received key buffer is empty\n");
 		}
+
+		//define keys
+		//CDP_LORA
+		//LORA_CDP
+		//WEB_CDP
+		//CDP_WEB
+		else if(((strcmp(keyBuffer, "WEB_CDP") == 0) | 
+			    (strcmp(keyBuffer, "CDP_WEB") == 0)) | 
+				(strcmp(keyBuffer, "LORA_CDP")==0)) {
+				
+
+			acknowledge_message(c, mystream, groupName, messageID);
+				}
+
 		else if(strcmp(keyBuffer, "CDP_LORA") == 0) //if str are equal
 		{
 			printf("Key received: %s\n", keyBuffer);
@@ -122,13 +136,18 @@ void *redis_thread_func(void *ptr) {
 
 		int rx_queue_len = queue_len(c, queue_name_2);
 		if (rx_queue_len > 0) {
-			const char * key = "LORA_CDP";
+			puts("queue has contents");
+			print_queue(c, queue_name_2);
+			const char * key = "LORA_CDP"; //lora --> cdp
 			const char * mystream = "mystream";
 			char value[255];
 			char response[10];
 			dequeue_task(c, queue_name_2, value);
 			publish(c, mystream, key, value, response);
-		}	
+		}
+		else {
+			puts("nothing in rx queue");
+			}
 		sleep(1);
 	}
 	redisFree(c);  // Clean up Redis context

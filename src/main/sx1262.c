@@ -181,13 +181,14 @@ void rx_mode_attempt(){
 	uint8_t rx_buff_st_addr = 0;
 	uint8_t rx_pkt[256];
 	
+	redisContext * c = redis_init("127.0.0.1", 6379);
 	while (tx_mode_flag == 0) { //in receive mode
 		wait_on_DIO_IRQ();			//
 				
 		get_rx_buffer_status(&payload_len, &rx_buff_st_addr);
 
 
-		read_buffer(0, rx_pkt, payload_len);
+		read_buffer(0, rx_pkt, payload_len); //hard code to zero bc we clear buffer everytime
 		
 		clear_irq_status(CLEAR_ALL_IRQ);
 		clear_irq_status(CLEAR_ALL_IRQ);
@@ -200,9 +201,17 @@ void rx_mode_attempt(){
 	
 		}
 	printf("\n");
+	//should be CDP formatted packet
+	
+	enqueue_task(c, queue_name_2,(char *)rx_pkt);
+	puts("printing out the queue with rx loop");
 
-		printf("payload len: %u", payload_len);
+	print_queue(c, queue_name_2);
+
+
+	printf("payload len: %u", payload_len);
 	printf("\n");
+	
 	clear_buffer();
 	set_buffer_base_addr(0x00, 0x00);
 	memset(rx_pkt, 0, 256);
