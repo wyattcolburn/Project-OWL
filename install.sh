@@ -9,7 +9,6 @@ sudo apt-get install redis-server
 
 
 git clone https://github.com/wyattcolburn/Project-OWL.git
-git clone https://github.com/wyattcolburn/Project-OWL.git
 cd Project-OWL
 cd lg
 make
