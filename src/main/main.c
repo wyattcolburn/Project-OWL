@@ -90,7 +90,6 @@ void *redis_thread_func(void *ptr) {
 	char messageID[100];
 
 	create_consumer_group(c, mystream, groupName);
-	puts("before reading any messages, lets see # pending messages\n");
 	check_pending_messages(c, mystream, groupName);
     
 	while (1) {  // Assuming you want to continuously read from the stream
