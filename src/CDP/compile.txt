@@ -1,1 +1,1 @@
-g++ cdp_redis.cpp redis.cpp -o cdp_redis -lhiredis
+g++ main.cpp redis.cpp -o main -lhiredis

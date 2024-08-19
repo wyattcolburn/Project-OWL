@@ -4,20 +4,6 @@
 #include <hiredis/hiredis.h>
 #include "redis.h"
 int main(int argc, char *argv[]) {
-    // Connect to Redis
-	//
-	
-    /*redisContext *c = redis_init("127.0.0.1", 6379);*/
-    /*if (c == NULL || c->err) {*/
-        /*if (c) {*/
-            /*printf("Error: %s\n", c->errstr);*/
-            /*redisFree(c);*/
-        /*} else {*/
-            /*printf("Can't allocate redis context\n");*/
-        /*}*/
-        /*exit(1);*/
-    /*}*/
-
 	char messageBuff[100];
 
 	//user has provided a message
