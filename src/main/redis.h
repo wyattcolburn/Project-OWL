@@ -17,8 +17,9 @@ void read_from_consumer_group2(redisContext * c, const char *stream_name, const 
 
 void acknowledge_message(redisContext * c, const char *stream_name, const char *group_name, const char *message_id);
 
-void check_pending_messages(redisContext * c, const char *stream_name, const char *group_name);
+void check_pending_messages(redisContext * c, const char *stream_name, const char *group_name, char * messageID);
 
+int retrieve_message(redisContext *redisConnect, const char *stream_name, const char *group_name, const char *message_id, char *key, char *value);
 int get_and_process_first_pending_message(redisContext * c, const char * stream_name, const char *group_name, const char * consumer_name, char * keyBuffer, char * messageBuffer, char * messageIDBuffer);
 void delete_stream(redisContext * c, const char *stream_name);
 
@@ -29,6 +30,8 @@ void dequeue_task(redisContext * c, const char * queue_name, char * taskBuffer);
 void print_queue(redisContext * c, const char * queue_name);
 
 int queue_len(redisContext *c, const char * queue_name);
+
+int retrieve_smallest_pending(redisContext * redisConnect, const char * stream_name, const char * group_name, char * key, char * value);
 #endif
 
 

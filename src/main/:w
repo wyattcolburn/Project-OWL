@@ -107,13 +107,9 @@ void read_from_consumer_group(redisContext *c, const char *stream_name, const ch
 
 				// Extract and concatenate key-value pairs into the message buffer
 				for (size_t k = 0; k < fields->elements; k += 2) {
-					printf("field element 2, should be message buffer%s", 
-							fields->element[k+1]->str);
+
 					strcat(key_buffer, fields->element[k]->str);
 					strcat(message_buffer, fields->element[k + 1]->str);
-					printf("catting to buffers : %d\n", (k/2));
-					printf("key buffer : %s\n", key_buffer);
-					printf("mes buffer : %s\n", message_buffer);
 					/*strcat(message_buffer, fields->element[k]->str);*/
 					/*strcat(message_buffer, ": ");*/
 					/*strcat(message_buffer, fields->element[k + 1]->str);*/
@@ -122,7 +118,7 @@ void read_from_consumer_group(redisContext *c, const char *stream_name, const ch
 					}
 				}
 
-				/*printf("Message Content: %s\n", message_buffer);  // Print or use the message content*/
+				printf("Message Content: %s\n", message_buffer);  // Print or use the message content
 			}
 		}
 	} else {
@@ -152,8 +148,6 @@ void readStream(redisContext *redis_connect, const char *stream_name, char *resp
 
             // Assuming the message is stored as key-value pairs, and you want the value (not the key)
             for (size_t j = 1; j < fields->elements; j += 2) {
-				printf("stream key : %s\n",  fields->element[j-1]->str);
-				printf("reading stream : %s\n", fields->element[j]->str);
                 strcat(response, fields->element[j]->str); // Append the value to the response buffer
 
                 if (j + 2 < fields->elements) {
@@ -197,7 +191,7 @@ void acknowledge_message(redisContext *c, const char *stream_name, const char *g
 
     freeReplyObject(reply);
 }
-void check_pending_messages(redisContext *c, const char *stream_name, const char *group_name, char * messageID) {
+void check_pending_messages(redisContext *c, const char *stream_name, const char *group_name, char * response) {
     redisReply *reply = (redisReply *)redisCommand(c, "XPENDING %s %s", stream_name, group_name);
 
     if (reply == NULL) {
@@ -208,11 +202,7 @@ void check_pending_messages(redisContext *c, const char *stream_name, const char
     if (reply->type == REDIS_REPLY_ARRAY && reply->elements == 4) {
         printf("Pending count: %lld\n", reply->element[0]->integer);
       
-		/*printf("Smallest Pending ID: %s\n", reply->element[1]->str);*/
-		/*if (reply->element[1]->str != NULL) {*/
-		/*strcat(messageID, reply->element[1]->str);*/
-		/*}*/
-		/*printf("message passed to buffer %s\n", messageID);*/
+		printf("Smallest Pending ID: %s\n", reply->element[1]->str);
         /*printf("Largest Pending ID: %s\n", reply->element[2]->str);*/
         /*printf("Consumers with pending messages: %llu\n", reply->element[3]->elements);*/
     } else {
@@ -221,25 +211,18 @@ void check_pending_messages(redisContext *c, const char *stream_name, const char
 
     freeReplyObject(reply);
 }
-
-int retrieve_message(redisContext *redisConnect, const char *stream_name, const char *group_name, const char *message_id, char *key, char *value) {
-    if (stream_name == NULL || group_name == NULL || message_id == NULL || key == NULL || value == NULL) {
+int retrieve_message(redisContext *redisConnect, const char *stream_name, const char *message_id, char *key, char *value) {
+    if (stream_name == NULL || message_id == NULL || key == NULL || value == NULL) {
         return -1; // Error: Invalid input
     }
 
-    // Debugging output
-    printf("message id passed into retrieve_message: %s\n", message_id);
-
     // Send the command to Redis to retrieve the message by ID
-    redisReply *reply = (redisReply *)redisCommand(redisConnect, "XREADGROUP GROUP %s myconsumer COUNT 1 STREAMS %s %s", group_name, stream_name, message_id);
+    redisReply *reply = (redisReply *)redisCommand(redisConnect, "XREAD COUNT 1 STREAMS %s %s", stream_name, message_id);
 
     if (reply == NULL) {
         printf("Command execution error\n");
         return -1; // Error: Redis command failed
     }
-
-    // Debugging output
-    printf("Message ID passed to XREADGROUP: %s\n", message_id);
 
     if (reply->type == REDIS_REPLY_ARRAY && reply->elements > 0) {
         redisReply *stream = reply->element[0];
@@ -254,17 +237,11 @@ int retrieve_message(redisContext *redisConnect, const char *stream_name, const 
                 strcpy(key, fields->element[0]->str);
                 strcpy(value, fields->element[1]->str);
 
-                // Debugging output
-                printf("Retrieved key: %s, value: %s\n", key, value);
-
                 // Free the reply object
                 freeReplyObject(reply);
                 return 0; // Success
             }
         }
-    } else {
-        // Additional diagnostic output
-        printf("Unexpected reply type or structure: type=%d, elements=%lu\n", reply->type, reply->elements);
     }
 
     // Handle cases where the message or key-value pairs were not found
@@ -344,7 +321,7 @@ freeReplyObject(reply);
 void enqueue_task(redisContext *c, const char *queue_name, const char *task) {
     redisReply *reply = (redisReply *)redisCommand(c, "RPUSH %s %s", queue_name, task);
     if (reply->type == REDIS_REPLY_INTEGER) {
-        printf("\n\n\nTask added to queue '%s'. Queue length: %lld\n\n\n", queue_name, reply->integer);
+        printf("Task added to queue '%s'. Queue length: %lld\n", queue_name, reply->integer);
     }
     freeReplyObject(reply);
 }
@@ -352,7 +329,7 @@ void enqueue_task(redisContext *c, const char *queue_name, const char *task) {
 void dequeue_task(redisContext *c, const char *queue_name, char * taskBuffer) {
     redisReply *reply = (redisReply *)redisCommand(c, "LPOP %s", queue_name);
     if (reply->type == REDIS_REPLY_STRING) {
-        printf("Dequeued task: %s\n\n\n", reply->str);
+        printf("Dequeued task: %s\n", reply->str);
 		strcat(taskBuffer, reply->str);
     } else {
         printf("Queue is empty or command failed.\n");

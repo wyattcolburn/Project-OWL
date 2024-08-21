@@ -202,10 +202,15 @@ void rx_mode_attempt(){
 		}
 	printf("\n");
 	//should be CDP formatted packet
-	
-	enqueue_task(c, queue_name_2,(char *)rx_pkt);
-	puts("printing out the queue with rx loop");
+	if (rx_pkt[0] != '\0') {	
+		enqueue_task(c, queue_name_2,(char *)rx_pkt);
+		puts("printing out the queue with rx loop");
+	}
 
+	else {
+		puts("empty rx pkt");
+
+	}
 	print_queue(c, queue_name_2);
 
 
@@ -327,7 +332,7 @@ void send_packet(uint8_t* data, uint16_t data_len) {
 	print_status_information();
 
 	wait_on_DIO_IRQ();
-	clear_irq_status(CLEAR_ALL_IRQ);
+	clear_irq_status(0x3FF);
 	//need to clear IRQ
 	int dio = gpio_status(chip_handle, DIO_PIN);
 	printf("DIO\n");
