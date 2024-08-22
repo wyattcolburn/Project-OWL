@@ -46,41 +46,78 @@ void publish(redisContext *redisConnect, const char *stream_name, const char *ke
     // Free the reply object
     freeReplyObject(reply);
 }
-
-
-void read_from_consumer_group2(redisContext *c, const char *stream_name, const char *group_name, const char *consumer_name){
-
-
+void read_from_consumer_group_dynamic(redisContext *c, const char *stream_name, const char *group_name, const char *consumer_name, KeyValuePair **messageArray, size_t *totalMessages) {
     redisReply *reply = (redisReply *)redisCommand(c, "XREADGROUP GROUP %s %s STREAMS %s >", group_name, consumer_name, stream_name);
 
     if (reply == NULL) {
         printf("Command execution error\n");
+        *messageArray = NULL;
+        *totalMessages = 0;
         return;
     }
 
     if (reply->type == REDIS_REPLY_ARRAY && reply->elements > 0) {
+        *totalMessages = 0;
+
+        // Calculate the total number of messages to allocate memory accordingly
+        for (size_t i = 0; i < reply->elements; i++) {
+            redisReply *stream = reply->element[i];
+            redisReply *messages = stream->element[1];
+            *totalMessages += messages->elements;
+        }
+
+        *messageArray = malloc(*totalMessages * sizeof(KeyValuePair));
+        if (*messageArray == NULL) {
+            fprintf(stderr, "Memory allocation failed\n");
+            freeReplyObject(reply);
+            *totalMessages = 0;
+            return;
+        }
+
+        size_t messageIndex = 0;
+
         for (size_t i = 0; i < reply->elements; i++) {
             redisReply *stream = reply->element[i];
             redisReply *messages = stream->element[1];
 
             for (size_t j = 0; j < messages->elements; j++) {
                 redisReply *message = messages->element[j];
-                printf("Message ID: %s\n", message->element[0]->str);  // Message ID (if you need it)
+                printf("Message ID: %s\n", message->element[0]->str);
+                (*messageArray)[messageIndex].messageID = strdup(message->element[0]->str);
+
                 redisReply *fields = message->element[1];
 
-                // Extract and concatenate key-value pairs into the message buffer
                 for (size_t k = 0; k < fields->elements; k += 2) {
+                    // Allocate memory for key and value
+                    (*messageArray)[messageIndex].key = strdup(fields->element[k]->str);
+                    (*messageArray)[messageIndex].value = strdup(fields->element[k + 1]->str);
 
-                    if (k + 2 < fields->elements) {
+                    if ((*messageArray)[messageIndex].key == NULL || (*messageArray)[messageIndex].value == NULL) {
+                        fprintf(stderr, "Memory allocation failed\n");
+                        // Free previously allocated memory before returning
+                        for (size_t m = 0; m < messageIndex; m++) {
+                            free((*messageArray)[m].key);
+                            free((*messageArray)[m].value);
+                        }
+                        free(*messageArray);
+                        freeReplyObject(reply);
+                        *messageArray = NULL;
+                        *totalMessages = 0;
+                        return;
                     }
+
+                    printf("Storing message #%zu - Key: %s, Value: %s, messageID: %s \n", messageIndex, (*messageArray)[messageIndex].key, (*messageArray)[messageIndex].value, (*messageArray)[messageIndex].messageID);
+                    messageIndex++;
                 }
 
             }
         }
     } else {
-        /*printf("No messages found.\n");*/
+        printf("No messages found.\n");
+        *messageArray = NULL;
+        *totalMessages = 0;
     }
-
+	puts("end of dyanmic function");
     freeReplyObject(reply);
 }
 
