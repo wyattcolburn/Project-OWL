@@ -195,7 +195,7 @@ void rx_mode_attempt(){
 
 		/*enqueue_task(b, queue_name_2,(char *) rx_pkt);*/
 			
-		printf("received packet in full:\n");
+		printf("received packet in full:\n\n\n\n");
 		for (int i = 0; i < payload_len; i++) {
 			printf("%c", rx_pkt[i]);
 	

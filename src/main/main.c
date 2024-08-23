@@ -143,6 +143,7 @@ void *redis_thread_func(void *ptr) {
 			char response[10];
 			dequeue_task(c, queue_name_2, value);
 			publish(c, mystream, key, value, response);
+			printf("\n\n\n message has been published : %s\n\n\n", value);
 		}
 		else {
 			puts("nothing in rx queue");
