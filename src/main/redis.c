@@ -2,7 +2,7 @@
 #include <string.h>
 #include <hiredis/hiredis.h>
 #include "redis.h"
-
+#include <unistd.h>  // For sleep
 redisContext * redis_init(const char * server, int port){
 	puts("redis init");
 	redisContext * c = redisConnect(server, port);
@@ -121,7 +121,7 @@ void read_from_consumer_group_dynamic(redisContext *c, const char *stream_name, 
     freeReplyObject(reply);
 }
 
-
+/*
 void read_from_consumer_group(redisContext *c, const char *stream_name, const char *group_name, const char *consumer_name, char * key_buffer, char *message_buffer, char *messageID) {
 	redisReply *reply = (redisReply *)redisCommand(c, "XREADGROUP GROUP %s %s STREAMS %s >", group_name, consumer_name, stream_name);
 
@@ -151,15 +151,11 @@ void read_from_consumer_group(redisContext *c, const char *stream_name, const ch
 					printf("catting to buffers : %d\n", (k/2));
 					printf("key buffer : %s\n", key_buffer);
 					printf("mes buffer : %s\n", message_buffer);
-					/*strcat(message_buffer, fields->element[k]->str);*/
-					/*strcat(message_buffer, ": ");*/
-					/*strcat(message_buffer, fields->element[k + 1]->str);*/
 					if (k + 2 < fields->elements) {
 						strcat(message_buffer, ", ");  // Separate key-value pairs with a comma
 					}
 				}
 
-				/*printf("Message Content: %s\n", message_buffer);  // Print or use the message content*/
 			}
 		}
 	} else {
@@ -170,7 +166,7 @@ void read_from_consumer_group(redisContext *c, const char *stream_name, const ch
 
 	freeReplyObject(reply);
 }
-
+*/
 
 void readStream(redisContext *redis_connect, const char *stream_name, char *response) {
     if (stream_name == NULL || response == NULL) {

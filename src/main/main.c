@@ -21,7 +21,6 @@ int main() {
     puts("hello world");
 
 	redisContext * c = redis_init("127.0.0.1", 6379);
-	delete_stream(c, "mystream");
 	// Clear the queue at startup
     redisCommand(c, "DEL %s", queue_name);
     redisCommand(c, "DEL %s", queue_name_2);
@@ -148,7 +147,7 @@ void *redis_thread_func(void *ptr) {
 		else {
 			puts("nothing in rx queue");
 			}
-		sleep(1);
+		sleep(10);
 	}
 	redisFree(c);  // Clean up Redis context
 	return NULL;
