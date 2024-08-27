@@ -1,1 +1,0 @@
-g++ main.cpp redis.cpp -o main -lhiredis
