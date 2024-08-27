@@ -248,7 +248,6 @@ int main()
 //////connect redis server
 
 	redisContext* redisConnect = redis_init("localhost", 6379);
-	delete_stream(redisConnect, "mystream");
 const string web_queue;
 const string lora_queue;
     redisCommand(redisConnect, "DEL %s", web_queue.c_str());
