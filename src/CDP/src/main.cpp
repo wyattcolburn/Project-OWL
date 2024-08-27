@@ -81,12 +81,13 @@ string modifystring (string cdp, int position){
     return cdp;
 }
 string unmodifystring (string cdp, int position){
-    if((cdp[position] ^ 0x80) >127){//this goes into extended ascii range
+    
+     if ((cdp[position] ^ 0x20) < 32){//non printable characters
+        cdp[position] = cdp[position] ^ 0x20;
+    }else if ((cdp[position] ^ 0x80) >127){//this goes into extended ascii range
         cdp[position] = cdp[position] ^ 0x80;
     }
-    else if ((cdp[position] ^ 0x20) < 32){//non printable characters
-        cdp[position] = cdp[position] ^ 0x20;
-    }
+
     else {
         //dont modify
     }
@@ -117,25 +118,30 @@ string sendToWeb (vector<uint8_t> receivedData) {
 }
 
 string encodeCDPAlex(string cdppayload) {
-    for (int i = 0; i < cdppayload.size(); i++) {//modifies all unreadable characters within the string to make sure they are readable
-        cdppayload = modifystring(cdppayload, SDUID_POS + i);
+    for (int i = 0; i < 7; i++) {//modifies all unreadable characters within the string to make sure they are readable
+        cdppayload = modifystring(cdppayload, TOPIC_POS + i);
     }
     return cdppayload;
 }
 
 string decodeCDPAlex(string cdppayload) {
-    for (int i = 0; i < cdppayload.size(); i++) {//undoes modifying of string to get actual data initially put in
-        cdppayload = unmodifystring(cdppayload, SDUID_POS + i);
+    for (int i = 0; i < 7; i++) {//undoes modifying of string to get actual data initially put in
+        cdppayload = unmodifystring(cdppayload, TOPIC_POS + i);
     }
     return cdppayload;
 }
 string decodeCDP(string inputString){
 
+	cout << "In Decode Function" << endl;
 	Packet dp;
 	PapaDuck pd;
 
+	cout << "input String: " << endl;
+	cout << inputString << endl;
 
-	inputString = decodeCDP(inputString);
+	inputString = decodeCDPAlex(inputString);
+	cout << "Input String after CDPAlex" << endl;
+	cout << inputString << endl;
 	dp.setBuffer(duckutils::convertStringToVector(inputString));
 	pd.handleReceivedPacket(dp);
 	vector <uint8_t> receivedData = dp.getBuffer();
@@ -150,6 +156,8 @@ string encodeCDP(string web_stream ){
 	
 
 	//varibles which dont need to be stored
+	
+	cout << "In Encode Function" << endl;
 	DuckLink dl;
 	vector<uint8_t> dduid;
 	uint8_t topic;
@@ -248,12 +256,26 @@ int main()
 //////connect redis server
 
 	redisContext* redisConnect = redis_init("localhost", 6379);
-const string web_queue;
-const string lora_queue;
+const string web_queue = "web_queue";
+const string lora_queue = "lora_queue";
+
+if (web_queue != lora_queue) {        
+       	cout << "web_queue and lora_queue are different.\n";    
+}
+else {
+       	cout << "web_queue and lora_queue are the same.\n";
+}
     redisCommand(redisConnect, "DEL %s", web_queue.c_str());
 
     redisCommand(redisConnect, "DEL %s", lora_queue.c_str());
 
+
+if (web_queue != lora_queue) {        
+       	cout << "web_queue and lora_queue are different.\n";    
+}
+else {
+       	cout << "web_queue and lora_queue are the same.\n";
+}
 	string value = "DUID:MAMA0001 TOPIC:status DATA:Test Data String DUCKTYPE:LINK ";
 string value2 = "DUID:MAMA0001 TOPIC:status DATA:Test Data String Again DUCKTYPE:PAPA ";
 string value3 = "DUCK0001MAMA0001V16U0# R:weTest Data String Again";
@@ -337,6 +359,8 @@ create_consumer_group(redisConnect, "mystream", "CDP");
 					}
 
 					else if (messageArray[messageCounter].key == "LORA_CDP") {
+						cout << "LORA_CDP key Block" << endl;
+					//	messageArray[messageCounter].value = decodeCDPAlex(messageArray[messageCounter].value);
 						enqueue_task(redisConnect, lora_queue, 
 								messageArray[messageCounter].value);
 
@@ -353,7 +377,11 @@ create_consumer_group(redisConnect, "mystream", "CDP");
 					check_pending_messages(redisConnect, stream_name, group_name);
 				}
 
+				cout << "PreQueue Logic" << endl;
+				print_queue(redisConnect, lora_queue);
+				print_queue(redisConnect, web_queue);
 				if (queue_len(redisConnect, web_queue) > 0) {
+					cout << "WEB Queue" << endl;
 					string task_buffer;
 					dequeue_task(redisConnect, web_queue, task_buffer);
 					string outputMessage = encodeCDP(task_buffer);
@@ -361,6 +389,7 @@ create_consumer_group(redisConnect, "mystream", "CDP");
 							outputMessage, task_buffer);
 				}
 				if (queue_len(redisConnect, lora_queue) > 0) {
+					cout << "LORA Queue" << endl;
 					string task_buffer;
 					dequeue_task(redisConnect, lora_queue, task_buffer);
 					string outputMessage = decodeCDP(task_buffer);
@@ -374,3 +403,4 @@ create_consumer_group(redisConnect, "mystream", "CDP");
 			sleep(5);
 	}
 }
+
