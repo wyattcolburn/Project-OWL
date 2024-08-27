@@ -193,7 +193,6 @@ void rx_mode_attempt(){
 		clear_irq_status(CLEAR_ALL_IRQ);
 		clear_irq_status(CLEAR_ALL_IRQ);
 
-		/*enqueue_task(b, queue_name_2,(char *) rx_pkt);*/
 			
 		printf("received packet in full:\n\n\n\n");
 		for (int i = 0; i < payload_len; i++) {
@@ -201,6 +200,7 @@ void rx_mode_attempt(){
 	
 		}
 	printf("\n");
+	
 	//should be CDP formatted packet
 	if (rx_pkt[0] != '\0') {	
 		enqueue_task(c, queue_name_2,(char *)rx_pkt);
@@ -209,7 +209,6 @@ void rx_mode_attempt(){
 
 	else {
 		puts("empty rx pkt");
-
 	}
 	print_queue(c, queue_name_2);
 
