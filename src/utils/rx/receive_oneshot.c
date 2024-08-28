@@ -60,11 +60,11 @@ int main() {
 	wait_on_busy(); //so waiting for standby mode
 	
 	get_irq_status();
-	/*print_status_information();*/
+	print_status_information();
 
-	/*set_regulator_mode();*/
-	/*print_status_information();*/
-	/*set_standby_mode(); //into standby rc*/
+	set_regulator_mode();
+	print_status_information();
+	set_standby_mode(); //into standby rc*/
 						
 
 
@@ -225,7 +225,7 @@ void rx_mode_attempt(){
 	config_packet_params(12, PKT_EXPLICIT_HDR, len, PKT_CRC_OFF, STD_IQ_SETUP);
 
 	set_dio_irq_params(0xFFFF, RX_DONE_MASK, 0x0000, 0x0000); //sets dio1 as tx
-	set_rx_mode(0x000000); //continous mode
+	set_rx_mode(0xFFFFFF); //continous mode
 						   //
 	wait_on_busy();
 	print_status_information();	   
