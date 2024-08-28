@@ -177,7 +177,7 @@ void rx_mode_attempt(){
 	printf("\n");
 	
 	//should be CDP formatted packet
-	if (rx_pkt[0] != 0) {	
+	if (payload_len > 0) {	
 		enqueue_task(c, queue_name_2,(char *)rx_pkt);
 		puts("printing out the queue with rx loop");
 	}
