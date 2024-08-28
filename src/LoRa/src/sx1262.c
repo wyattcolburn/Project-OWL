@@ -208,7 +208,7 @@ void set_rx_mode(uint32_t timeout) {
 	ant_sw_on();
 
 	SLEEP_MS(100);
-	uint8_t rx_gain = RX_GAIN_PWR_SAVING;
+	uint8_t rx_gain = RX_GAIN_BOOSTED;
 	write_registers(REG_RX_GAIN, &rx_gain, 1);
 	wait_on_busy();
 	uint8_t readRegVal;
