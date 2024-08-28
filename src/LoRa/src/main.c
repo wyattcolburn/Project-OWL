@@ -141,8 +141,13 @@ void *redis_thread_func(void *ptr) {
 			char value[255];
 			char response[10];
 			dequeue_task(c, queue_name_2, value);
+			if (strlen(value) > 27) { 
 			publish(c, mystream, key, value, response);
 			printf("\n\n\n message has been published : %s\n\n\n", value);
+			}
+			else {
+				printf("task did not have a len greater than 27, minimum for header\n");
+			}
 		}
 		else {
 			puts("nothing in rx queue");
