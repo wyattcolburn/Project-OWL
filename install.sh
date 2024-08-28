@@ -1,4 +1,4 @@
-
+# install script for Project-OWL quad pro
 sudo apt-get update
 sudo apt-get upgrade
 sudo apt-get install unzip
@@ -7,12 +7,11 @@ sudo apt-get install libhiredis-dev
 sudo apt-get update
 sudo apt-get install redis-server
 
-
-git clone https://github.com/wyattcolburn/Project-OWL.git
-cd Project-OWL
+wget http://abyz.me.uk/lg/lg.zip
+unzip lg.zip
 cd lg
 make
 sudo make install
-cd ..
-sudo rm -rf lg 
 
+
+git clone https://github.com/wyattcolburn/Project-OWL.git
