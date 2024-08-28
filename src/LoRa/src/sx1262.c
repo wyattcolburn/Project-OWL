@@ -12,31 +12,6 @@
 #define GET_RST_STATS_OP                UINT8_C(0x00)
 /*Pin Connections:*/
 
-/*LoRa Shield -> Raspberry Pi*/
-/*J1: */
-	/*BUSY 4*/
-	/*DIO1 6*/
-	/*NSS 8*/
-
-/*J2:*/
-	/*ANT SW 1*/
-	/*D9 2 */
-	/*MOSI 4->19 (white cable)*/
-	/*MISO 5 ->21 (black cable)*/
-	/*SCLK 6 ->23 (grey cable)*/
-	/*GND 7*/
-
-/*J3:*/
-	/*GND 6 & 7*/
-	/*VCC MBED, VDD 3V3, VDD_RADIO 4*/
-
-/*J4:	*/
-	/*SX RESET 1*/
-	/*VDD 3V3 /GND 2*/
-	/*GND 3*/
-	/*VCC (XTAL) 4 -> Pin 1*/
-	/*A5 5*/
-	/*A6 6*/
 int enterMessage(char *messageBuffer);
 extern const char *queue_name_2;
 uint16_t count_characters(const char *input);
@@ -202,7 +177,7 @@ void rx_mode_attempt(){
 	printf("\n");
 	
 	//should be CDP formatted packet
-	if (rx_pkt[0] != '\0') {	
+	if (rx_pkt[0] != 0) {	
 		enqueue_task(c, queue_name_2,(char *)rx_pkt);
 		puts("printing out the queue with rx loop");
 	}
