@@ -54,10 +54,14 @@ def parse_reply(reply):
         if list(message[1].keys())[0] == INBOUND_KEY.encode():
             # Slice string to get components
             message_content = message[1][INBOUND_KEY.encode()]
-            content_list = message_content.decode().split('_')[:-1]
-            sduid = content_list[0][len("SDUID:") : ]
-            topic = content_list[1][len("TOPIC:") : ]
-            data = content_list[2][len("DATA:") : ]
+            decoded_content = message_content.decode('utf-8')
+            content_list = decoded_content.split('_')[:-1]
+            sduid = content_list[0].split("SDUID:")[1]
+            topic = content_list[1].split("TOPIC:")[1]
+            data = content_list[2].split("DATA:")[1]
+            #sduid = content_list[0][len("SDUID:") : ]
+            #topic = content_list[1][len("TOPIC:") : ]
+            #data = content_list[2][len("DATA:") : ]
             # Send message out to client side
             message_to_client(sduid, topic, data)
             
