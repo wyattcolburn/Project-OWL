@@ -283,7 +283,7 @@ void tx_config(uint16_t payload_len){
 	set_packet_type(LORA_PKT_TYPE);
 	set_rf_frequency(RF_FREQ);
 	set_tx_params(0, SET_RAMP_3400U);
-	config_modulation_params(LORA_SF, LORA_BW, LORA_CR, LORA_LCR);
+	config_modulation_params(LORA_SF_12, LORA_BW_250, LORA_CR_4_5, 0 );
 	config_packet_params(12, LORA_HEADER, payload_len, LORA_PKT_CRC, LORA_IQ_SETUP);
 
 
