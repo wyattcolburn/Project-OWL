@@ -1,4 +1,5 @@
 import redis
+import re
 from flask import Flask, render_template, request, redirect, url_for
 from flask_socketio import SocketIO
 import redis.exceptions
@@ -46,11 +47,45 @@ def redis_init():
         for message in detailed_reply:
             redis_stream.xack(STREAM_NAME, CONSUMER_GROUP, message['message_id'])
     return True
-
+    
 def parse_reply(reply):
-    # Iterate through all messages read from xread_group
+    # List to store extracted values
+    parsed_messages = []
+    
     for message in reply[0][1]:
-        # Only will attempt to parse inbound messages
+        message_id, message_data = message[0], message[1]
+        
+        if INBOUND_KEY.encode() in message_data:
+            message_content = message_data[INBOUND_KEY.encode()]
+            
+            try:
+                # Decode message content, replacing invalid characters with '_'
+                decoded_content = message_content.decode('utf-8', errors='replace')
+                # Replace the Unicode replacement character with '_'
+                decoded_content = decoded_content.replace('�', '_')
+                
+                # Debugging: Print the full message content
+                print(f"Decoded message content: {decoded_content}")
+                
+                # Regex pattern to match and extract values
+                match = re.match(r"SDUID:(.*?)_TOPIC:(.*?)_DATA:(.*?)_", decoded_content)
+                if match:
+                    sduid, topic, data = match.groups()
+                    parsed_messages.append((sduid, topic, data))
+                else:
+                    print(f"Message did not match expected format: {decoded_content}")
+            
+            except UnicodeDecodeError as e:
+                print(f"Unicode decode error: {e}")
+        
+        # Acknowledge the message as processed
+        redis_stream.xack(STREAM_NAME, CONSUMER_GROUP, message_id)
+    
+    # Process each extracted message
+    for sduid, topic, data in parsed_messages:
+        message_to_client(sduid, topic, data)
+    """
+    for message in reply[0][1]:
         if list(message[1].keys())[0] == INBOUND_KEY.encode():
             # Slice string to get components
             message_content = message[1][INBOUND_KEY.encode()]
@@ -67,7 +102,7 @@ def parse_reply(reply):
             
         # Ack message regardless of inbound/outbound
         redis_stream.xack(STREAM_NAME, CONSUMER_GROUP, message[0])
-
+    """
 def message_to_client(SDUID, topic, data):
     # Format information how client expects to receive it
     formatted_string = f'SDUID:{SDUID}\nTOPIC:{topic}\nDATA:{data}'
