@@ -111,7 +111,7 @@ string sendToWeb (vector<uint8_t> receivedData) {
     receivedSduid = duckutils::convertVectorToString(sduid);
     receivedTopic = Packet::topicToString(receivedData.at(TOPIC_POS));
     receivedMessage = duckutils::convertVectorToString(receivedMsg);
-    messageForWeb = "SDUID:" + receivedSduid + " TOPIC:"  + receivedTopic + " DATA:" + receivedMessage +" ";
+    messageForWeb = "SDUID:" + receivedSduid + "_TOPIC:"  + receivedTopic + "_DATA:" + receivedMessage +"_";
 
     return messageForWeb;
 
