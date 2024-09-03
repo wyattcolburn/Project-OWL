@@ -276,7 +276,8 @@ if (web_queue != lora_queue) {
 else {
        	cout << "web_queue and lora_queue are the same.\n";
 }
-	string value = "DUID:MAMA0001 TOPIC:status DATA:Test Data String DUCKTYPE:LINK ";
+
+string value = "DUID:MAMA0001 TOPIC:status DATA:Test Data String DUCKTYPE:LINK ";
 string value2 = "DUID:MAMA0001 TOPIC:status DATA:Test Data String Again DUCKTYPE:PAPA ";
 string value3 = "DUCK0001MAMA0001V16U0# R:weTest Data String Again";
 
