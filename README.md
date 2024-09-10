@@ -23,9 +23,18 @@ As a message broker, user input from the web team is formatted into a string whi
 
 The archeitcture for the redis stream is simple but dynamic enough to allow for an physical layer to be added. Physical layer refers to how the message will be sent out, the current implemenetation is LoRa, but other technologies, such as, FSK can be implemented in similar fashion. 
 
+### Web App
+Description of what the web app does
+
+### CDP 
+Description of what CDP does
+### LoRa
+Description of what LoRa does
+
+### How to run the program
 
 
-The LoRa program is written in C and leverages the LG library for GPIO control. The LG library is based of the linux kernel driver so will work with the new raspberry pi5.
+
 
 ## Cloning the Repo
 ```
